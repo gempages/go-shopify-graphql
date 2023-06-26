@@ -220,6 +220,7 @@ var collectionQuery = `
 var collectionSingleQuery = `
   id
   title
+  createdAt
   updatedAt
   handle
   description
@@ -244,6 +245,7 @@ var collectionSingleQueryWithCursor = `
   id
   title
   handle
+  createdAt
   updatedAt
   description
   descriptionHtml
@@ -267,6 +269,7 @@ var collectionBulkQuery = `
 	id
 	handle
 	title
+    createdAt
 	updatedAt
  	description
     descriptionHtml
@@ -289,6 +292,7 @@ var collectionWithProductsBulkQuery = `
 	id
 	handle
 	title
+    createdAt
 	updatedAt
  	description
     descriptionHtml
