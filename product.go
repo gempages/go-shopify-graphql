@@ -15,20 +15,20 @@ import (
 type ProductService interface {
 	List(query string) ([]*ProductBulkResult, error)
 	ListAll() ([]*ProductBulkResult, error)
-	ListWithFields(first int, cursor string, query string, fields string, retryCount int) (*ProductsQueryResult, error)
+	ListWithFields(first int, cursor string, query string, fields string) (*ProductsQueryResult, error)
 
-	Get(gid graphql.ID, retryCount int) (*ProductQueryResult, error)
-	GetSingleProductCollection(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error)
-	GetSingleProductVariant(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error)
-	GetSingleProduct(id graphql.ID, retryCount int) (*ProductQueryResult, error)
-	Create(product *ProductCreate, retryCount int) error
-	CreateBulk(products []*ProductCreate, retryCount int) error
+	Get(gid graphql.ID) (*ProductQueryResult, error)
+	GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error)
+	GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error)
+	GetSingleProduct(id graphql.ID) (*ProductQueryResult, error)
+	Create(product *ProductCreate) error
+	CreateBulk(products []*ProductCreate) error
 
-	Update(product *ProductUpdate, retryCount int) error
-	UpdateBulk(products []*ProductUpdate, retryCount int) error
+	Update(product *ProductUpdate) error
+	UpdateBulk(products []*ProductUpdate) error
 
-	Delete(product *ProductDelete, retryCount int) error
-	DeleteBulk(products []*ProductDelete, retryCount int) error
+	Delete(product *ProductDelete) error
+	DeleteBulk(products []*ProductDelete) error
 	TriggerListAll() (id graphql.ID, err error)
 }
 
@@ -607,8 +607,8 @@ func (s *ProductServiceOp) List(query string) ([]*ProductBulkResult, error) {
 	return res, nil
 }
 
-func (s *ProductServiceOp) Get(id graphql.ID, retryCount int) (*ProductQueryResult, error) {
-	out, err := s.getPage(id, "", retryCount)
+func (s *ProductServiceOp) Get(id graphql.ID) (*ProductQueryResult, error) {
+	out, err := s.getPage(id, "")
 	if err != nil {
 		return nil, err
 	}
@@ -617,7 +617,7 @@ func (s *ProductServiceOp) Get(id graphql.ID, retryCount int) (*ProductQueryResu
 	hasNextPage := out.ProductVariants.PageInfo.HasNextPage
 	for hasNextPage && len(nextPageData.ProductVariants.Edges) > 0 {
 		cursor := nextPageData.ProductVariants.Edges[len(nextPageData.ProductVariants.Edges)-1].Cursor
-		nextPageData, err := s.getPage(id, cursor, retryCount)
+		nextPageData, err := s.getPage(id, cursor)
 		if err != nil {
 			return nil, err
 		}
@@ -628,7 +628,7 @@ func (s *ProductServiceOp) Get(id graphql.ID, retryCount int) (*ProductQueryResu
 	return out, nil
 }
 
-func (s *ProductServiceOp) getPage(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) getPage(id graphql.ID, cursor string) (*ProductQueryResult, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!, $cursor: String) {
 			product(id: $id){
@@ -647,7 +647,7 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string, retryCount int)
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -657,7 +657,7 @@ func (s *ProductServiceOp) getPage(id graphql.ID, cursor string, retryCount int)
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor string) (*ProductQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -687,7 +687,7 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -697,7 +697,7 @@ func (s *ProductServiceOp) GetSingleProductCollection(id graphql.ID, cursor stri
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string, retryCount int) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string) (*ProductQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -727,7 +727,7 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string,
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -737,7 +737,7 @@ func (s *ProductServiceOp) GetSingleProductVariant(id graphql.ID, cursor string,
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) GetSingleProduct(id graphql.ID, retryCount int) (*ProductQueryResult, error) {
+func (s *ProductServiceOp) GetSingleProduct(id graphql.ID) (*ProductQueryResult, error) {
 	q := fmt.Sprintf(`
 		query product($id: ID!) {
 			product(id: $id){
@@ -755,7 +755,7 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID, retryCount int) (*Pro
 	out := struct {
 		Product *ProductQueryResult `json:"product"`
 	}{}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -765,7 +765,7 @@ func (s *ProductServiceOp) GetSingleProduct(id graphql.ID, retryCount int) (*Pro
 	return out.Product, nil
 }
 
-func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string, retryCount int) (*ProductsQueryResult, error) {
+func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields string) (*ProductsQueryResult, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -794,7 +794,7 @@ func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields strin
 	}
 	out := &ProductsQueryResult{}
 
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -804,9 +804,9 @@ func (s *ProductServiceOp) ListWithFields(first int, cursor, query, fields strin
 	return out, nil
 }
 
-func (s *ProductServiceOp) CreateBulk(products []*ProductCreate, retryCount int) error {
+func (s *ProductServiceOp) CreateBulk(products []*ProductCreate) error {
 	for _, p := range products {
-		err := s.Create(p, retryCount)
+		err := s.Create(p)
 		if err != nil {
 			log.Warnf("Couldn't create product (%v): %s", p, err)
 		}
@@ -815,14 +815,14 @@ func (s *ProductServiceOp) CreateBulk(products []*ProductCreate, retryCount int)
 	return nil
 }
 
-func (s *ProductServiceOp) Create(product *ProductCreate, retryCount int) error {
+func (s *ProductServiceOp) Create(product *ProductCreate) error {
 	m := mutationProductCreate{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 		"media": product.MediaInput,
 	}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
@@ -836,9 +836,9 @@ func (s *ProductServiceOp) Create(product *ProductCreate, retryCount int) error 
 	return nil
 }
 
-func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate, retryCount int) error {
+func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate) error {
 	for _, p := range products {
-		err := s.Update(p, retryCount)
+		err := s.Update(p)
 		if err != nil {
 			log.Warnf("Couldn't update product (%v): %s", p, err)
 		}
@@ -847,13 +847,13 @@ func (s *ProductServiceOp) UpdateBulk(products []*ProductUpdate, retryCount int)
 	return nil
 }
 
-func (s *ProductServiceOp) Update(product *ProductUpdate, retryCount int) error {
+func (s *ProductServiceOp) Update(product *ProductUpdate) error {
 	m := mutationProductUpdate{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 	}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
@@ -867,9 +867,9 @@ func (s *ProductServiceOp) Update(product *ProductUpdate, retryCount int) error 
 	return nil
 }
 
-func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete, retryCount int) error {
+func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete) error {
 	for _, p := range products {
-		err := s.Delete(p, retryCount)
+		err := s.Delete(p)
 		if err != nil {
 			log.Warnf("Couldn't delete product (%v): %s", p, err)
 		}
@@ -878,13 +878,13 @@ func (s *ProductServiceOp) DeleteBulk(products []*ProductDelete, retryCount int)
 	return nil
 }
 
-func (s *ProductServiceOp) Delete(product *ProductDelete, retryCount int) error {
+func (s *ProductServiceOp) Delete(product *ProductDelete) error {
 	m := mutationProductDelete{}
 
 	vars := map[string]interface{}{
 		"input": product.ProductInput,
 	}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {

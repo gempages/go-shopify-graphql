@@ -205,7 +205,10 @@ func (s *BulkOperationServiceOp) CancelRunningBulkQuery() (err error) {
 }
 
 func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error {
-	var err error
+	var (
+		id  graphql.ID
+		err error
+	)
 
 	// sentry tracing
 	span := sentry.StartSpan(s.client.gql.Context(), "shopify_graphql.bulk_query")
@@ -222,7 +225,10 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 		return err
 	}
 
-	id, err := s.PostBulkQuery(query)
+	err = utils.ExecWithRetries(s.client.retries, func() error {
+		id, err = s.PostBulkQuery(query)
+		return err
+	})
 	if err != nil {
 		return err
 	}

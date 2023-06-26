@@ -16,16 +16,16 @@ import (
 type CollectionService interface {
 	List(query string) ([]*CollectionBulkResult, error)
 	ListAll() ([]*CollectionBulkResult, error)
-	ListByCursor(first int, cursor string, retryCount int) (*CollectionsQueryResult, error)
-	ListWithFields(first int, cursor string, query string, fields string, retryCount int) (*CollectionsQueryResult, error)
+	ListByCursor(first int, cursor string) (*CollectionsQueryResult, error)
+	ListWithFields(first int, cursor string, query string, fields string) (*CollectionsQueryResult, error)
 
-	Get(id graphql.ID, retryCount int) (*CollectionQueryResult, error)
-	GetSingleCollection(id graphql.ID, cursor string, retryCount int) (*CollectionQueryResult, error)
+	Get(id graphql.ID) (*CollectionQueryResult, error)
+	GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error)
 
-	Create(collection *CollectionCreate, retryCount int) (graphql.ID, error)
-	CreateBulk(collections []*CollectionCreate, retryCount int) error
+	Create(collection *CollectionCreate) (graphql.ID, error)
+	CreateBulk(collections []*CollectionCreate) error
 
-	Update(collection *CollectionCreate, retryCount int) error
+	Update(collection *CollectionCreate) error
 }
 
 type CollectionServiceOp struct {
@@ -365,7 +365,7 @@ func (s *CollectionServiceOp) ListAll() ([]*CollectionBulkResult, error) {
 	return res, nil
 }
 
-func (s *CollectionServiceOp) ListByCursor(first int, cursor string, retryCount int) (*CollectionsQueryResult, error) {
+func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*CollectionsQueryResult, error) {
 	q := fmt.Sprintf(`
 		query collections($first: Int!, $cursor: String) {
 			collections(first: $first, after: $cursor){
@@ -390,7 +390,7 @@ func (s *CollectionServiceOp) ListByCursor(first int, cursor string, retryCount 
 	}
 
 	out := CollectionsQueryResult{}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -400,7 +400,7 @@ func (s *CollectionServiceOp) ListByCursor(first int, cursor string, retryCount 
 	return &out, nil
 }
 
-func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields string, retryCount int) (*CollectionsQueryResult, error) {
+func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields string) (*CollectionsQueryResult, error) {
 	if fields == "" {
 		fields = `id`
 	}
@@ -429,7 +429,7 @@ func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields st
 	}
 	out := CollectionsQueryResult{}
 
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -439,12 +439,12 @@ func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields st
 	return &out, nil
 }
 
-func (s *CollectionServiceOp) Get(id graphql.ID, retryCount int) (*CollectionQueryResult, error) {
+func (s *CollectionServiceOp) Get(id graphql.ID) (*CollectionQueryResult, error) {
 	var (
 		out *CollectionQueryResult
 		err error
 	)
-	out, err = s.getPage(id, "", retryCount)
+	out, err = s.getPage(id, "")
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +455,7 @@ func (s *CollectionServiceOp) Get(id graphql.ID, retryCount int) (*CollectionQue
 		cursor := nextPageData.Products.Edges[len(nextPageData.Products.Edges)-1].Cursor
 		// Shopify rate limit: 2 requests per sec
 		time.Sleep(500 * time.Millisecond)
-		nextPageData, err = s.getPage(id, cursor, retryCount)
+		nextPageData, err = s.getPage(id, cursor)
 		if err != nil {
 			return nil, err
 		}
@@ -466,7 +466,7 @@ func (s *CollectionServiceOp) Get(id graphql.ID, retryCount int) (*CollectionQue
 	return out, nil
 }
 
-func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string, retryCount int) (*CollectionQueryResult, error) {
+func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string) (*CollectionQueryResult, error) {
 	q := fmt.Sprintf(`
 		query collection($id: ID!, $cursor: String) {
 			collection(id: $id){
@@ -485,7 +485,7 @@ func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string, retryCount i
 	out := struct {
 		Collection *CollectionQueryResult `json:"collection"`
 	}{}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -495,7 +495,7 @@ func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string, retryCount i
 	return out.Collection, nil
 }
 
-func (s *CollectionServiceOp) GetSingleCollection(id graphql.ID, cursor string, retryCount int) (*CollectionQueryResult, error) {
+func (s *CollectionServiceOp) GetSingleCollection(id graphql.ID, cursor string) (*CollectionQueryResult, error) {
 	q := ""
 	if cursor != "" {
 		q = fmt.Sprintf(`
@@ -525,7 +525,7 @@ func (s *CollectionServiceOp) GetSingleCollection(id graphql.ID, cursor string, 
 	out := struct {
 		Collection *CollectionQueryResult `json:"collection"`
 	}{}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.QueryString(context.Background(), q, vars, &out)
 	})
 	if err != nil {
@@ -535,9 +535,9 @@ func (s *CollectionServiceOp) GetSingleCollection(id graphql.ID, cursor string, 
 	return out.Collection, nil
 }
 
-func (s *CollectionServiceOp) CreateBulk(collections []*CollectionCreate, retryCount int) error {
+func (s *CollectionServiceOp) CreateBulk(collections []*CollectionCreate) error {
 	for _, c := range collections {
-		_, err := s.client.Collection.Create(c, retryCount)
+		_, err := s.client.Collection.Create(c)
 		if err != nil {
 			log.Warnf("Couldn't create collection (%v): %s", c, err)
 		}
@@ -546,14 +546,14 @@ func (s *CollectionServiceOp) CreateBulk(collections []*CollectionCreate, retryC
 	return nil
 }
 
-func (s *CollectionServiceOp) Create(collection *CollectionCreate, retryCount int) (graphql.ID, error) {
+func (s *CollectionServiceOp) Create(collection *CollectionCreate) (graphql.ID, error) {
 	var id graphql.ID
 	m := mutationCollectionCreate{}
 
 	vars := map[string]interface{}{
 		"input": collection.CollectionInput,
 	}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {
@@ -568,13 +568,13 @@ func (s *CollectionServiceOp) Create(collection *CollectionCreate, retryCount in
 	return id, nil
 }
 
-func (s *CollectionServiceOp) Update(collection *CollectionCreate, retryCount int) error {
+func (s *CollectionServiceOp) Update(collection *CollectionCreate) error {
 	m := mutationCollectionUpdate{}
 
 	vars := map[string]interface{}{
 		"input": collection.CollectionInput,
 	}
-	err := utils.ExecWithRetries(retryCount, func() error {
+	err := utils.ExecWithRetries(s.client.retries, func() error {
 		return s.client.gql.Mutate(context.Background(), &m, vars)
 	})
 	if err != nil {

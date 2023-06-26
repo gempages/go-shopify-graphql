@@ -17,6 +17,8 @@ const (
 type Client struct {
 	gql *graphql.Client
 
+	retries int
+
 	Product       ProductService
 	Variant       VariantService
 	Inventory     InventoryService
@@ -86,6 +88,10 @@ func (c *Client) GraphQLClient() *graphql.Client {
 	return c.gql
 }
 
+func (c *Client) SetRetries(retryCount int) {
+	c.retries = retryCount
+}
+
 // NewClientWithOpts returns a new Shopify GRAPHQL client with custom graphql options
 func NewClientWithOpts(storeName string, opts ...graphqlclient.Option) *Client {
 	c := &Client{gql: graphqlclient.NewClient(storeName, opts...)}
@@ -107,7 +113,8 @@ func NewClientWithOpts(storeName string, opts ...graphqlclient.Option) *Client {
 }
 
 // NewClientWithToken returns a new Shopify Admin GRAPHQL client with
-//  authenticated domain and token
+//
+//	authenticated domain and token
 func NewClientWithToken(apiKey string, storeName string) *Client {
 	c := &Client{gql: newShopifyGraphQLClientWithToken(apiKey, storeName)}
 
