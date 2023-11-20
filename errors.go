@@ -26,3 +26,31 @@ func IsRateLimitError(err error) bool {
 	}
 	return errors.Is(err, graphql.ErrMaxCostExceeded)
 }
+
+func IsUnauthorizedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, graphql.ErrUnauthorized)
+}
+
+func IsForbiddenError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, graphql.ErrForbidden)
+}
+
+func IsNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, graphql.ErrNotFound)
+}
+
+func IsInternalError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return errors.Is(err, graphql.ErrInternal)
+}

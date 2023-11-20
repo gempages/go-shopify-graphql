@@ -125,6 +125,18 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	if resp.StatusCode == http.StatusLocked {
 		return ErrLocked
 	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		return ErrUnauthorized
+	}
+	if resp.StatusCode == http.StatusForbidden {
+		return ErrForbidden
+	}
+	if resp.StatusCode == http.StatusNotFound {
+		return ErrNotFound
+	}
+	if resp.StatusCode == http.StatusInternalServerError {
+		return ErrInternal
+	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return errors.NewErrorWithContext(ctx, fmt.Errorf("non-200 OK status code: %v", resp.Status), map[string]any{"body": string(body)})
