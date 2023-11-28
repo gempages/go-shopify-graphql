@@ -212,10 +212,7 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 		return err
 	}
 
-	err = utils.ExecWithRetries(s.client.retries, func() error {
-		id, err = s.PostBulkQuery(query)
-		return err
-	})
+	id, err = s.PostBulkQuery(query)
 	if err != nil {
 		return fmt.Errorf("post bulk query: %w", err)
 	}

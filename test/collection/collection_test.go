@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql"
 	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 	. "github.com/onsi/ginkgo/v2"
@@ -115,9 +116,10 @@ var _ = Describe("CollectionService", func() {
 
 	Describe("Get", func() {
 		When("ID does not exist", func() {
-			It("returns nil without any error", func() {
+			It("returns not found error", func() {
+				var notExistErr *errors.NotExistsError
 				collection, err := shopifyClient.Collection.Get("gid://shopify/Collection/0000")
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).To(BeAssignableToTypeOf(notExistErr))
 				Expect(collection).To(BeNil())
 			})
 		})

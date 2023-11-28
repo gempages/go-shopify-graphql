@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql"
 	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 	. "github.com/onsi/ginkgo/v2"
@@ -143,9 +144,10 @@ var _ = Describe("ProductService", func() {
 
 	Describe("Get", func() {
 		When("ID does not exist", func() {
-			It("returns nil without any error", func() {
+			It("returns not found error", func() {
+				var notExistErr *errors.NotExistsError
 				product, err := shopifyClient.Product.Get("gid://shopify/Product/0000")
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).To(BeAssignableToTypeOf(notExistErr))
 				Expect(product).To(BeNil())
 			})
 		})
@@ -163,9 +165,10 @@ var _ = Describe("ProductService", func() {
 
 	Describe("GetWithFields", func() {
 		When("ID does not exist", func() {
-			It("returns nil without any error", func() {
+			It("returns not found error", func() {
+				var notExistErr *errors.NotExistsError
 				product, err := shopifyClient.Product.GetWithFields("gid://shopify/Product/0000", "id")
-				Expect(err).NotTo(HaveOccurred())
+				Expect(err).To(BeAssignableToTypeOf(notExistErr))
 				Expect(product).To(BeNil())
 			})
 		})

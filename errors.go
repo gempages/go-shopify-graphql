@@ -2,9 +2,22 @@ package shopify
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
+
+func IsInvalidTokenError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Invalid API key or access token")
+}
+
+func IsInvalidStorefrontTokenError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "401 Unauthorized")
+}
+
+func IsPermissionError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "403 Forbidden")
+}
 
 func IsPaymentRequiredError(err error) bool {
 	if err == nil {

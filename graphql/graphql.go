@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
+	"time"
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-helper/tracing"
@@ -22,6 +25,7 @@ type Client struct {
 	url        string // GraphQL server URL.
 	httpClient *http.Client
 	ctx        context.Context
+	retries    int
 }
 
 // NewClient creates a GraphQL client targeting the specified GraphQL server URL.
@@ -40,6 +44,12 @@ func NewClient(url string, httpClient *http.Client) *Client {
 // set input ctx for graphql client
 func (c *Client) SetContext(ctx context.Context) {
 	c.ctx = ctx
+}
+
+// SetRetries set a context for graphql client
+// set input ctx for graphql client
+func (c *Client) SetRetries(retries int) {
+	c.retries = retries
 }
 
 // Context get a single context from graphql client
@@ -109,12 +119,35 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	}()
 	// end sentry tracing
 
-	var buf bytes.Buffer
-	err = json.NewEncoder(&buf).Encode(in)
-	if err != nil {
+	retries := c.retries
+	attempts := 0
+	for {
+		attempts++
+		// Create new data buffer for each attempt
+		var buf bytes.Buffer
+		err = json.NewEncoder(&buf).Encode(in)
+		if err != nil {
+			return err
+		}
+		err = c.doRequest(ctx, &buf, v)
+		if err == nil {
+			break
+		}
+		if retries <= 1 {
+			return fmt.Errorf("after %v attempts: %w", attempts, err)
+		}
+		if c.shouldRetry(err) {
+			retries--
+			time.Sleep(time.Duration(attempts) * time.Second)
+			continue
+		}
 		return err
 	}
-	resp, err := ctxhttp.Post(ctx, c.httpClient, c.url, "application/json", &buf)
+	return nil
+}
+
+func (c *Client) doRequest(ctx context.Context, body io.Reader, v interface{}) error {
+	resp, err := ctxhttp.Post(ctx, c.httpClient, c.url, "application/json", body)
 	if err != nil {
 		return err
 	}
@@ -170,6 +203,13 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	return nil
 }
 
+func (c *Client) shouldRetry(err error) bool {
+	if uerr, isURLErr := err.(*url.Error); isURLErr {
+		return uerr.Timeout() || uerr.Temporary()
+	}
+	return isThrottledError(err) || isConnectionError(err) || errors.Is(err, ErrMaxCostExceeded)
+}
+
 // errors represents the "errors" array in a response from a GraphQL server.
 // If returned via error interface, the slice is expected to contain at least 1 element.
 //
@@ -200,3 +240,11 @@ const (
 	mutationOperation
 	// subscriptionOperation // Unused.
 )
+
+func isThrottledError(err error) bool {
+	return err != nil && err.Error() == "Throttled"
+}
+
+func isConnectionError(err error) bool {
+	return err != nil && (strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "broken pipe"))
+}

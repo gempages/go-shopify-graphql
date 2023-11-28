@@ -7,7 +7,6 @@ import (
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	"github.com/gempages/go-shopify-graphql/utils"
 )
 
 type ProductService interface {
@@ -428,9 +427,7 @@ func (s *ProductServiceOp) ListWithFields(query, fields string, first int, after
 	}
 	out := model.QueryRoot{}
 
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -478,9 +475,7 @@ func (s *ProductServiceOp) getPage(id string, cursor string) (*model.Product, er
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -508,9 +503,7 @@ func (s *ProductServiceOp) GetWithFields(id string, fields string) (*model.Produ
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -550,9 +543,7 @@ func (s *ProductServiceOp) GetSingleProductCollection(id string, cursor string) 
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -592,9 +583,7 @@ func (s *ProductServiceOp) GetSingleProductVariant(id string, cursor string) (*m
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -622,9 +611,7 @@ func (s *ProductServiceOp) GetSingleProduct(id string) (*model.Product, error) {
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -643,9 +630,7 @@ func (s *ProductServiceOp) Create(product model.ProductInput, media []model.Crea
 		"input": product,
 		"media": media,
 	}
-	err = utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
-	})
+	err = s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
 		return
 	}
@@ -664,9 +649,7 @@ func (s *ProductServiceOp) Update(product model.ProductInput) (output *model.Pro
 	vars := map[string]interface{}{
 		"input": product,
 	}
-	err = utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
-	})
+	err = s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
 		return
 	}
@@ -685,9 +668,7 @@ func (s *ProductServiceOp) Delete(product model.ProductDeleteInput) (deletedID *
 	vars := map[string]interface{}{
 		"input": product,
 	}
-	err = utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
-	})
+	err = s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
 		return
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 	"github.com/gempages/go-shopify-graphql/graphql"
-	"github.com/gempages/go-shopify-graphql/utils"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -231,9 +230,7 @@ func (s *CollectionServiceOp) ListByCursor(first int, cursor string) (*model.Col
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -273,9 +270,7 @@ func (s *CollectionServiceOp) ListWithFields(first int, cursor, query, fields st
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -327,9 +322,7 @@ func (s *CollectionServiceOp) getPage(id graphql.ID, cursor string) (*model.Coll
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -369,9 +362,7 @@ func (s *CollectionServiceOp) GetSingleCollection(id string, cursor string) (*mo
 	}
 
 	out := model.QueryRoot{}
-	err := utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.QueryString(context.Background(), q, vars, &out)
-	})
+	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -400,9 +391,7 @@ func (s *CollectionServiceOp) Create(collection model.CollectionInput) (output *
 	vars := map[string]interface{}{
 		"input": collection,
 	}
-	err = utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
-	})
+	err = s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
 		return
 	}
@@ -421,9 +410,7 @@ func (s *CollectionServiceOp) Update(collection model.CollectionInput) (output *
 	vars := map[string]interface{}{
 		"input": collection,
 	}
-	err = utils.ExecWithRetries(s.client.retries, func() error {
-		return s.client.gql.Mutate(context.Background(), &m, vars)
-	})
+	err = s.client.gql.Mutate(context.Background(), &m, vars)
 	if err != nil {
 		return
 	}

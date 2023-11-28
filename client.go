@@ -17,8 +17,6 @@ const (
 type Client struct {
 	gql *graphql.Client
 
-	retries int
-
 	Product       ProductService
 	Variant       VariantService
 	Inventory     InventoryService
@@ -91,7 +89,7 @@ func (c *Client) GraphQLClient() *graphql.Client {
 }
 
 func (c *Client) SetRetries(retryCount int) {
-	c.retries = retryCount
+	c.gql.SetRetries(retryCount)
 }
 
 // NewClientWithOpts returns a new Shopify GRAPHQL client with custom graphql options
