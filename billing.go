@@ -8,11 +8,11 @@ import (
 )
 
 type BillingService interface {
-	AppCreditCreate(input *AppCreditCreateInput) (*AppCreditCreateResult, error)
-	AppPurchaseOneTimeCreate(input *AppPurchaseOneTimeCreateInput) (*AppPurchaseOneTimeCreateResult, error)
-	AppSubscriptionCancel(id graphql.ID, prorate graphql.Boolean) (*AppSubscriptionCancelResult, error)
-	AppSubscriptionCreate(input *AppSubscriptionCreateInput) (*AppSubscriptionCreateResult, error)
-	AppSubscriptionTrialExtend(input *AppSubscriptionTrailExtendInput) (*AppSubscriptionTrailExtendResult, error)
+	AppCreditCreate(ctx context.Context, input *AppCreditCreateInput) (*AppCreditCreateResult, error)
+	AppPurchaseOneTimeCreate(ctx context.Context, input *AppPurchaseOneTimeCreateInput) (*AppPurchaseOneTimeCreateResult, error)
+	AppSubscriptionCancel(ctx context.Context, id graphql.ID, prorate graphql.Boolean) (*AppSubscriptionCancelResult, error)
+	AppSubscriptionCreate(ctx context.Context, input *AppSubscriptionCreateInput) (*AppSubscriptionCreateResult, error)
+	AppSubscriptionTrialExtend(ctx context.Context, input *AppSubscriptionTrailExtendInput) (*AppSubscriptionTrailExtendResult, error)
 }
 
 type BillingServiceOp struct {
@@ -161,7 +161,7 @@ type MutationAppSubscriptionTrailExtendCreate struct {
 	AppSubscriptionTrailExtendResult AppSubscriptionTrailExtendResult `graphql:"appSubscriptionTrialExtend(days: $days, id: $id)" json:"appSubscriptionTrialExtend"`
 }
 
-func (instance *BillingServiceOp) AppCreditCreate(input *AppCreditCreateInput) (*AppCreditCreateResult, error) {
+func (instance *BillingServiceOp) AppCreditCreate(ctx context.Context, input *AppCreditCreateInput) (*AppCreditCreateResult, error) {
 	m := MutationAppCreditCreate{}
 
 	if input != nil {
@@ -170,7 +170,7 @@ func (instance *BillingServiceOp) AppCreditCreate(input *AppCreditCreateInput) (
 			"test":        input.Test,
 			"description": input.Description,
 		}
-		err := instance.client.gql.Mutate(context.Background(), &m, vars)
+		err := instance.client.gql.Mutate(ctx, &m, vars)
 		if err != nil {
 			return nil, err
 		}
@@ -182,7 +182,7 @@ func (instance *BillingServiceOp) AppCreditCreate(input *AppCreditCreateInput) (
 	return &m.AppCreditCreateResult, nil
 }
 
-func (instance *BillingServiceOp) AppSubscriptionTrialExtend(input *AppSubscriptionTrailExtendInput) (*AppSubscriptionTrailExtendResult, error) {
+func (instance *BillingServiceOp) AppSubscriptionTrialExtend(ctx context.Context, input *AppSubscriptionTrailExtendInput) (*AppSubscriptionTrailExtendResult, error) {
 	m := MutationAppSubscriptionTrailExtendCreate{}
 
 	if input != nil {
@@ -190,7 +190,7 @@ func (instance *BillingServiceOp) AppSubscriptionTrialExtend(input *AppSubscript
 			"days": input.Days,
 			"id":   input.ID,
 		}
-		err := instance.client.gql.Mutate(context.Background(), &m, vars)
+		err := instance.client.gql.Mutate(ctx, &m, vars)
 		if err != nil {
 			return nil, err
 		}
@@ -202,7 +202,7 @@ func (instance *BillingServiceOp) AppSubscriptionTrialExtend(input *AppSubscript
 	return &m.AppSubscriptionTrailExtendResult, nil
 }
 
-func (instance *BillingServiceOp) AppPurchaseOneTimeCreate(input *AppPurchaseOneTimeCreateInput) (*AppPurchaseOneTimeCreateResult, error) {
+func (instance *BillingServiceOp) AppPurchaseOneTimeCreate(ctx context.Context, input *AppPurchaseOneTimeCreateInput) (*AppPurchaseOneTimeCreateResult, error) {
 	m := MutationAppPurchaseOneTimeCreate{}
 
 	if input != nil {
@@ -212,7 +212,7 @@ func (instance *BillingServiceOp) AppPurchaseOneTimeCreate(input *AppPurchaseOne
 			"returnUrl": input.ReturnUrl,
 			"test":      input.Test,
 		}
-		err := instance.client.gql.Mutate(context.Background(), &m, vars)
+		err := instance.client.gql.Mutate(ctx, &m, vars)
 		if err != nil {
 			return nil, err
 		}
@@ -224,14 +224,14 @@ func (instance *BillingServiceOp) AppPurchaseOneTimeCreate(input *AppPurchaseOne
 	return &m.AppPurchaseOneTimeCreateResult, nil
 }
 
-func (instance *BillingServiceOp) AppSubscriptionCancel(id graphql.ID, prorate graphql.Boolean) (*AppSubscriptionCancelResult, error) {
+func (instance *BillingServiceOp) AppSubscriptionCancel(ctx context.Context, id graphql.ID, prorate graphql.Boolean) (*AppSubscriptionCancelResult, error) {
 	m := MutationAppSubscriptionCancel{}
 
 	vars := map[string]interface{}{
 		"id":      id,
 		"prorate": prorate,
 	}
-	err := instance.client.gql.Mutate(context.Background(), &m, vars)
+	err := instance.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (instance *BillingServiceOp) AppSubscriptionCancel(id graphql.ID, prorate g
 	return &m.AppSubscriptionCancelResult, nil
 }
 
-func (instance *BillingServiceOp) AppSubscriptionCreate(input *AppSubscriptionCreateInput) (*AppSubscriptionCreateResult, error) {
+func (instance *BillingServiceOp) AppSubscriptionCreate(ctx context.Context, input *AppSubscriptionCreateInput) (*AppSubscriptionCreateResult, error) {
 	m := MutationAppSubscriptionCreate{}
 
 	if input != nil {
@@ -253,7 +253,7 @@ func (instance *BillingServiceOp) AppSubscriptionCreate(input *AppSubscriptionCr
 			"test":      input.Test,
 			"trialDays": input.TrialDays,
 		}
-		err := instance.client.gql.Mutate(context.Background(), &m, vars)
+		err := instance.client.gql.Mutate(ctx, &m, vars)
 		if err != nil {
 			return nil, err
 		}

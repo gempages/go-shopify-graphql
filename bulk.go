@@ -2,6 +2,7 @@ package shopify
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -29,15 +30,15 @@ const (
 )
 
 type BulkOperationService interface {
-	BulkQuery(query string, v interface{}) error
+	BulkQuery(ctx context.Context, query string, v interface{}) error
 
-	PostBulkQuery(query string) (*string, error)
-	GetCurrentBulkQuery() (*model.BulkOperation, error)
-	GetCurrentBulkQueryResultURL() (*string, error)
-	WaitForCurrentBulkQuery(interval time.Duration) (*model.BulkOperation, error)
-	ShouldGetBulkQueryResultURL(id *string) (*string, error)
-	CancelRunningBulkQuery() error
-	GetBulkQueryResult(id graphql.ID) (*model.BulkOperation, error)
+	PostBulkQuery(ctx context.Context, query string) (*string, error)
+	GetCurrentBulkQuery(ctx context.Context) (*model.BulkOperation, error)
+	GetCurrentBulkQueryResultURL(ctx context.Context) (*string, error)
+	WaitForCurrentBulkQuery(ctx context.Context, interval time.Duration) (*model.BulkOperation, error)
+	ShouldGetBulkQueryResultURL(ctx context.Context, id *string) (*string, error)
+	CancelRunningBulkQuery(ctx context.Context) error
+	GetBulkQueryResult(ctx context.Context, id graphql.ID) (*model.BulkOperation, error)
 }
 
 type BulkOperationServiceOp struct {
@@ -60,13 +61,13 @@ func init() {
 	gidRegex = regexp.MustCompile(`^gid://shopify/(\w+)/\d+$`)
 }
 
-func (s *BulkOperationServiceOp) PostBulkQuery(query string) (*string, error) {
+func (s *BulkOperationServiceOp) PostBulkQuery(ctx context.Context, query string) (*string, error) {
 	m := mutationBulkOperationRunQuery{}
 	vars := map[string]interface{}{
 		"query": null.StringFrom(query),
 	}
 
-	err := s.client.gql.Mutate(s.client.gql.Context(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return nil, fmt.Errorf("error posting bulk query: %w", err)
 	}
@@ -78,25 +79,25 @@ func (s *BulkOperationServiceOp) PostBulkQuery(query string) (*string, error) {
 	return &m.BulkOperationRunQueryResult.BulkOperation.ID, nil
 }
 
-func (s *BulkOperationServiceOp) GetCurrentBulkQuery() (*model.BulkOperation, error) {
+func (s *BulkOperationServiceOp) GetCurrentBulkQuery(ctx context.Context) (*model.BulkOperation, error) {
 	var q struct {
 		CurrentBulkOperation struct {
 			model.BulkOperation
 		}
 	}
-	err := s.client.gql.Query(s.client.gql.Context(), &q, nil)
+	err := s.client.gql.Query(ctx, &q, nil)
 	if err != nil {
 		return nil, fmt.Errorf("query: %w", err)
 	}
 	return &q.CurrentBulkOperation.BulkOperation, nil
 }
 
-func (s *BulkOperationServiceOp) GetCurrentBulkQueryResultURL() (*string, error) {
-	return s.ShouldGetBulkQueryResultURL(nil)
+func (s *BulkOperationServiceOp) GetCurrentBulkQueryResultURL(ctx context.Context) (*string, error) {
+	return s.ShouldGetBulkQueryResultURL(ctx, nil)
 }
 
-func (s *BulkOperationServiceOp) ShouldGetBulkQueryResultURL(id *string) (*string, error) {
-	q, err := s.GetCurrentBulkQuery()
+func (s *BulkOperationServiceOp) ShouldGetBulkQueryResultURL(ctx context.Context, id *string) (*string, error) {
+	q, err := s.GetCurrentBulkQuery(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("getting current bulk operation: %w", err)
 	}
@@ -105,7 +106,7 @@ func (s *BulkOperationServiceOp) ShouldGetBulkQueryResultURL(id *string) (*strin
 		return nil, fmt.Errorf("bulk operation ID doesn't match, got=%v, want=%v", q.ID, id)
 	}
 
-	q, err = s.WaitForCurrentBulkQuery(1 * time.Second)
+	q, err = s.WaitForCurrentBulkQuery(ctx, 1*time.Second)
 	if err != nil {
 		return nil, fmt.Errorf("waiting for current bulk operation: %w", err)
 	}
@@ -128,20 +129,20 @@ func (s *BulkOperationServiceOp) ShouldGetBulkQueryResultURL(id *string) (*strin
 	return q.URL, nil
 }
 
-func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(interval time.Duration) (*model.BulkOperation, error) {
-	q, err := s.GetCurrentBulkQuery()
+func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(ctx context.Context, interval time.Duration) (*model.BulkOperation, error) {
+	q, err := s.GetCurrentBulkQuery(ctx)
 	if err != nil {
 		return q, fmt.Errorf("CurrentBulkOperation query: %w", err)
 	}
 
 	for q.Status == model.BulkOperationStatusCreated || q.Status == model.BulkOperationStatusRunning || q.Status == model.BulkOperationStatusCanceling {
 		log.Debugf("Bulk operation is still %s...", q.Status)
-		span := sentry.StartSpan(s.client.gql.Context(), "time.sleep")
+		span := sentry.StartSpan(ctx, "time.sleep")
 		span.Description = "interval"
 		time.Sleep(interval)
-		tracing.FinishSpan(span, s.client.gql.Context().Err())
+		tracing.FinishSpan(span, ctx.Err())
 
-		q, err = s.GetCurrentBulkQuery()
+		q, err = s.GetCurrentBulkQuery(ctx)
 		if err != nil {
 			return q, fmt.Errorf("CurrentBulkOperation query: %w", err)
 		}
@@ -151,8 +152,8 @@ func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(interval time.Duration)
 	return q, nil
 }
 
-func (s *BulkOperationServiceOp) CancelRunningBulkQuery() error {
-	q, err := s.GetCurrentBulkQuery()
+func (s *BulkOperationServiceOp) CancelRunningBulkQuery(ctx context.Context) error {
+	q, err := s.GetCurrentBulkQuery(ctx)
 	if err != nil {
 		return err
 	}
@@ -166,7 +167,7 @@ func (s *BulkOperationServiceOp) CancelRunningBulkQuery() error {
 			"id": operationID,
 		}
 
-		err = s.client.gql.Mutate(s.client.gql.Context(), &m, vars)
+		err = s.client.gql.Mutate(ctx, &m, vars)
 		if err != nil {
 			return fmt.Errorf("mutation: %w", err)
 		}
@@ -174,13 +175,13 @@ func (s *BulkOperationServiceOp) CancelRunningBulkQuery() error {
 			return fmt.Errorf("%+v", m.BulkOperationCancelResult.UserErrors)
 		}
 
-		q, err = s.GetCurrentBulkQuery()
+		q, err = s.GetCurrentBulkQuery(ctx)
 		if err != nil {
 			return err
 		}
 		for q.Status == model.BulkOperationStatusCreated || q.Status == model.BulkOperationStatusRunning || q.Status == model.BulkOperationStatusCanceling {
 			log.Tracef("Bulk operation still %s...", q.Status)
-			q, err = s.GetCurrentBulkQuery()
+			q, err = s.GetCurrentBulkQuery(ctx)
 			if err != nil {
 				return fmt.Errorf("get current bulk query: %w", err)
 			}
@@ -191,28 +192,29 @@ func (s *BulkOperationServiceOp) CancelRunningBulkQuery() error {
 	return nil
 }
 
-func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error {
+func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, out interface{}) error {
 	var (
 		id  *string
 		err error
 	)
 
 	// sentry tracing
-	span := sentry.StartSpan(s.client.gql.Context(), "shopify_graphql.bulk_query")
+	span := sentry.StartSpan(ctx, "shopify_graphql.bulk_query")
 	span.Data = map[string]interface{}{
 		"GraphQL Query": query,
 	}
 	defer func() {
 		tracing.FinishSpan(span, err)
 	}()
+	ctx = span.Context()
 	// end sentry tracing
 
-	_, err = s.WaitForCurrentBulkQuery(1 * time.Second)
+	_, err = s.WaitForCurrentBulkQuery(ctx, 1*time.Second)
 	if err != nil {
 		return err
 	}
 
-	id, err = s.PostBulkQuery(query)
+	id, err = s.PostBulkQuery(ctx, query)
 	if err != nil {
 		return fmt.Errorf("post bulk query: %w", err)
 	}
@@ -221,7 +223,7 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 		return fmt.Errorf("posted operation ID is nil")
 	}
 
-	url, err := s.ShouldGetBulkQueryResultURL(id)
+	url, err := s.ShouldGetBulkQueryResultURL(ctx, id)
 	if err != nil {
 		return fmt.Errorf("get bulk query result URL: %w", err)
 	}
@@ -235,7 +237,7 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 	resultFile := filepath.Join(os.TempDir(), filename)
 	// Clean up to avoid storage build up
 	defer os.Remove(resultFile)
-	err = utils.DownloadFile(s.client.gql.Context(), resultFile, *url)
+	err = utils.DownloadFile(ctx, resultFile, *url)
 	if err != nil {
 		return fmt.Errorf("download file: %w", err)
 	}
@@ -249,8 +251,8 @@ func (s *BulkOperationServiceOp) BulkQuery(query string, out interface{}) error 
 }
 
 // GetBulkQueryResult get current status of bulk query id
-func (s *BulkOperationServiceOp) GetBulkQueryResult(id graphql.ID) (*model.BulkOperation, error) {
-	q, err := s.GetCurrentBulkQuery()
+func (s *BulkOperationServiceOp) GetBulkQueryResult(ctx context.Context, id graphql.ID) (*model.BulkOperation, error) {
+	q, err := s.GetCurrentBulkQuery(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get current bulk query: %w", err)
 	}

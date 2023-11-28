@@ -8,7 +8,7 @@ import (
 )
 
 type VariantService interface {
-	Update(variant model.ProductVariantInput) error
+	Update(ctx context.Context, variant model.ProductVariantInput) error
 }
 
 type VariantServiceOp struct {
@@ -25,13 +25,13 @@ type productVariantUpdateResult struct {
 	UserErrors []UserErrors
 }
 
-func (s *VariantServiceOp) Update(variant model.ProductVariantInput) error {
+func (s *VariantServiceOp) Update(ctx context.Context, variant model.ProductVariantInput) error {
 	m := mutationProductVariantUpdate{}
 
 	vars := map[string]interface{}{
 		"input": variant,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}

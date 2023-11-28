@@ -24,7 +24,6 @@ const MaxCostExceeded = "MAX_COST_EXCEEDED"
 type Client struct {
 	url        string // GraphQL server URL.
 	httpClient *http.Client
-	ctx        context.Context
 	retries    int
 }
 
@@ -40,25 +39,10 @@ func NewClient(url string, httpClient *http.Client) *Client {
 	}
 }
 
-// SetContext set a context for graphql client
-// set input ctx for graphql client
-func (c *Client) SetContext(ctx context.Context) {
-	c.ctx = ctx
-}
-
 // SetRetries set a context for graphql client
 // set input ctx for graphql client
 func (c *Client) SetRetries(retries int) {
 	c.retries = retries
-}
-
-// Context get a single context from graphql client
-// response the context from graphql client or new context
-func (c *Client) Context() context.Context {
-	if c.ctx != nil {
-		return c.ctx
-	}
-	return context.Background()
 }
 
 // QueryString executes a single GraphQL query request,
@@ -94,9 +78,6 @@ func (c *Client) MutateString(ctx context.Context, m string, variables map[strin
 
 // do executes a single GraphQL operation.
 func (c *Client) do(ctx context.Context, query string, variables map[string]interface{}, v interface{}) error {
-	if c.ctx != nil {
-		ctx = c.ctx
-	}
 	var err error
 	in := struct {
 		Query     string                 `json:"query"`

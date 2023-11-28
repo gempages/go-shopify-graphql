@@ -7,7 +7,7 @@ import (
 )
 
 type LocationService interface {
-	Get(id graphql.ID) (*Location, error)
+	Get(ctx context.Context, id graphql.ID) (*Location, error)
 }
 
 type LocationServiceOp struct {
@@ -19,7 +19,7 @@ type Location struct {
 	Name graphql.String `json:"name,omitempty"`
 }
 
-func (s *LocationServiceOp) Get(id graphql.ID) (*Location, error) {
+func (s *LocationServiceOp) Get(ctx context.Context, id graphql.ID) (*Location, error) {
 	q := `query location($id: ID!) {
 		location(id: $id){
 			id
@@ -34,7 +34,7 @@ func (s *LocationServiceOp) Get(id graphql.ID) (*Location, error) {
 	out := struct {
 		Location *Location `json:"location"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}

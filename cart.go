@@ -9,13 +9,13 @@ import (
 )
 
 type CartService interface {
-	Get(id graphql.String) (*Cart, error)
-	Create(cartInput *CartInput) (graphql.String, error)
-	CartLinesUpdate(id graphql.ID, cartLinesUpdateInput []CartLineUpdateInput) error
-	CartLinesAdd(id graphql.ID, lines []CartLineInput) error
-	CartLinesRemove(id graphql.ID, lineIds []graphql.ID) error
-	CartNoteUpdate(id graphql.ID, note graphql.String) error
-	CartDiscountCodesUpdate(id graphql.ID, discountCodes []graphql.String) error
+	Get(ctx context.Context, id graphql.String) (*Cart, error)
+	Create(ctx context.Context, cartInput *CartInput) (graphql.String, error)
+	CartLinesUpdate(ctx context.Context, id graphql.ID, cartLinesUpdateInput []CartLineUpdateInput) error
+	CartLinesAdd(ctx context.Context, id graphql.ID, lines []CartLineInput) error
+	CartLinesRemove(ctx context.Context, id graphql.ID, lineIds []graphql.ID) error
+	CartNoteUpdate(ctx context.Context, id graphql.ID, note graphql.String) error
+	CartDiscountCodesUpdate(ctx context.Context, id graphql.ID, discountCodes []graphql.String) error
 }
 
 type CartServiceOp struct {
@@ -122,7 +122,7 @@ const cartBaseQuery = `
     note
 `
 
-func (c CartServiceOp) Get(id graphql.String) (*Cart, error) {
+func (c CartServiceOp) Get(ctx context.Context, id graphql.String) (*Cart, error) {
 	q := fmt.Sprintf(`
 		query cart($id: ID!) {
 			cart(id: $id){
@@ -140,7 +140,7 @@ func (c CartServiceOp) Get(id graphql.String) (*Cart, error) {
 	out := struct {
 		Cart *Cart `json:"cart"`
 	}{}
-	err := c.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := c.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -159,13 +159,13 @@ type MutationCartCreate struct {
 	CartResult CartResult `graphql:"cartCreate(input: $cartInput)" json:"cartCreate"`
 }
 
-func (c CartServiceOp) Create(cartInput *CartInput) (graphql.String, error) {
+func (c CartServiceOp) Create(ctx context.Context, cartInput *CartInput) (graphql.String, error) {
 	m := MutationCartCreate{}
 
 	vars := map[string]interface{}{
 		"cartInput": cartInput,
 	}
-	err := c.client.gql.Mutate(context.Background(), &m, vars)
+	err := c.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return "", err
 	}
@@ -189,14 +189,14 @@ type mutationCartLinesUpdate struct {
 	CartLinesUpdateResult CartResult `graphql:"cartLinesUpdate(cartId: $cartId, lines: $lines)" json:"cartLinesUpdate"`
 }
 
-func (c CartServiceOp) CartLinesUpdate(id graphql.ID, cartLinesUpdateInput []CartLineUpdateInput) error {
+func (c CartServiceOp) CartLinesUpdate(ctx context.Context, id graphql.ID, cartLinesUpdateInput []CartLineUpdateInput) error {
 	m := mutationCartLinesUpdate{}
 
 	vars := map[string]interface{}{
 		"cartId": id,
 		"lines":  cartLinesUpdateInput,
 	}
-	err := c.client.gql.Mutate(context.Background(), &m, vars)
+	err := c.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -212,14 +212,14 @@ type mutationCartLinesAdd struct {
 	CartLinesAddResult CartResult `graphql:"cartLinesAdd(cartId: $cartId, lines: $lines)" json:"cartLinesAdd"`
 }
 
-func (c CartServiceOp) CartLinesAdd(id graphql.ID, lines []CartLineInput) error {
+func (c CartServiceOp) CartLinesAdd(ctx context.Context, id graphql.ID, lines []CartLineInput) error {
 	m := mutationCartLinesAdd{}
 
 	vars := map[string]interface{}{
 		"cartId": id,
 		"lines":  lines,
 	}
-	err := c.client.gql.Mutate(context.Background(), &m, vars)
+	err := c.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -235,14 +235,14 @@ type mutationCartLinesRemove struct {
 	CartLinesRemoveResult CartResult `graphql:"cartLinesRemove(cartId: $cartId, lineIds: $lineIds)" json:"cartLinesRemove"`
 }
 
-func (c CartServiceOp) CartLinesRemove(id graphql.ID, lineIds []graphql.ID) error {
+func (c CartServiceOp) CartLinesRemove(ctx context.Context, id graphql.ID, lineIds []graphql.ID) error {
 	m := mutationCartLinesRemove{}
 
 	vars := map[string]interface{}{
 		"cartId":  id,
 		"lineIds": lineIds,
 	}
-	err := c.client.gql.Mutate(context.Background(), &m, vars)
+	err := c.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -257,14 +257,14 @@ type mutationCartNoteUpdate struct {
 	CartNoteUpdateResult CartResult `graphql:"cartNoteUpdate(cartId: $cartId, note: $note)" json:"cartNoteUpdate"`
 }
 
-func (c CartServiceOp) CartNoteUpdate(id graphql.ID, note graphql.String) error {
+func (c CartServiceOp) CartNoteUpdate(ctx context.Context, id graphql.ID, note graphql.String) error {
 	m := mutationCartNoteUpdate{}
 
 	vars := map[string]interface{}{
 		"cartId": id,
 		"note":   note,
 	}
-	err := c.client.gql.Mutate(context.Background(), &m, vars)
+	err := c.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -279,14 +279,14 @@ type mutationCartDiscountCodesUpdate struct {
 	CartDiscountCodesUpdateResult CartResult `graphql:"cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes)" json:"cartDiscountCodesUpdate"`
 }
 
-func (c CartServiceOp) CartDiscountCodesUpdate(id graphql.ID, discountCodes []graphql.String) error {
+func (c CartServiceOp) CartDiscountCodesUpdate(ctx context.Context, id graphql.ID, discountCodes []graphql.String) error {
 	m := mutationCartDiscountCodesUpdate{}
 
 	vars := map[string]interface{}{
 		"cartId":        id,
 		"discountCodes": discountCodes,
 	}
-	err := c.client.gql.Mutate(context.Background(), &m, vars)
+	err := c.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}

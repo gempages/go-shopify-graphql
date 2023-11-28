@@ -1,6 +1,7 @@
 package product_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -21,12 +22,14 @@ const (
 
 var _ = Describe("ProductService", func() {
 	var (
+		ctx           context.Context
 		shopifyClient *shopify.Client
 		domain        string
 		token         string
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		domain = os.Getenv("SHOPIFY_SHOP_DOMAIN")
 		token = os.Getenv("SHOPIFY_API_TOKEN")
 		opts := []shopifyGraph.Option{
@@ -37,7 +40,7 @@ var _ = Describe("ProductService", func() {
 
 	Describe("ListAll", func() {
 		It("returns all products", func() {
-			results, err := shopifyClient.Product.ListAll()
+			results, err := shopifyClient.Product.ListAll(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeEmpty())
 			Expect(len(results)).To(Equal(TotalProductCount))
@@ -56,7 +59,7 @@ var _ = Describe("ProductService", func() {
 	Describe("List", func() {
 		When("no query is provided", func() {
 			It("returns all products", func() {
-				results, err := shopifyClient.Product.List("")
+				results, err := shopifyClient.Product.List(ctx, "")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(TotalProductCount))
@@ -76,7 +79,7 @@ var _ = Describe("ProductService", func() {
 			It("returns products with correct IDs", func() {
 				ids := []string{"8427241144634", "8427240423738", "8427239178554"}
 				query := fmt.Sprintf("id:%s", strings.Join(ids, " OR "))
-				results, err := shopifyClient.Product.List(query)
+				results, err := shopifyClient.Product.List(ctx, query)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(len(ids)))
@@ -99,7 +102,7 @@ var _ = Describe("ProductService", func() {
 		It("returns only requested fields", func() {
 			fields := `id title handle`
 			firstLimit := 1
-			results, err := shopifyClient.Product.ListWithFields("", fields, firstLimit, "")
+			results, err := shopifyClient.Product.ListWithFields(ctx, "", fields, firstLimit, "")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeNil())
 			for _, e := range results.Edges {
@@ -117,7 +120,7 @@ var _ = Describe("ProductService", func() {
 			It("returns 5 products", func() {
 				fields := `id`
 				firstLimit := 5
-				results, err := shopifyClient.Product.ListWithFields("", fields, firstLimit, "")
+				results, err := shopifyClient.Product.ListWithFields(ctx, "", fields, firstLimit, "")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeNil())
 				Expect(len(results.Edges)).To(Equal(firstLimit))
@@ -128,7 +131,7 @@ var _ = Describe("ProductService", func() {
 			It("can returns media", func() {
 				fields := fmt.Sprintf("id %s", mediaQuery)
 				firstLimit := 5
-				results, err := shopifyClient.Product.ListWithFields("", fields, firstLimit, "")
+				results, err := shopifyClient.Product.ListWithFields(ctx, "", fields, firstLimit, "")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeNil())
 				Expect(len(results.Edges)).To(Equal(firstLimit))
@@ -146,7 +149,7 @@ var _ = Describe("ProductService", func() {
 		When("ID does not exist", func() {
 			It("returns not found error", func() {
 				var notExistErr *errors.NotExistsError
-				product, err := shopifyClient.Product.Get("gid://shopify/Product/0000")
+				product, err := shopifyClient.Product.Get(ctx, "gid://shopify/Product/0000")
 				Expect(err).To(BeAssignableToTypeOf(notExistErr))
 				Expect(product).To(BeNil())
 			})
@@ -154,7 +157,7 @@ var _ = Describe("ProductService", func() {
 
 		When("ID exists", func() {
 			It("returns the correct product with all of its variants", func() {
-				product, err := shopifyClient.Product.Get(TestSingleQueryProductID)
+				product, err := shopifyClient.Product.Get(ctx, TestSingleQueryProductID)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(product).NotTo(BeNil())
 				Expect(product.ID).To(Equal(TestSingleQueryProductID))
@@ -167,7 +170,7 @@ var _ = Describe("ProductService", func() {
 		When("ID does not exist", func() {
 			It("returns not found error", func() {
 				var notExistErr *errors.NotExistsError
-				product, err := shopifyClient.Product.GetWithFields("gid://shopify/Product/0000", "id")
+				product, err := shopifyClient.Product.GetWithFields(ctx, "gid://shopify/Product/0000", "id")
 				Expect(err).To(BeAssignableToTypeOf(notExistErr))
 				Expect(product).To(BeNil())
 			})
@@ -176,7 +179,7 @@ var _ = Describe("ProductService", func() {
 		When("query media connection", func() {
 			It("returns product with any type of media", func() {
 				fields := fmt.Sprintf("id %s", mediaQuery)
-				product, err := shopifyClient.Product.GetWithFields(TestSingleQueryProductID, fields)
+				product, err := shopifyClient.Product.GetWithFields(ctx, TestSingleQueryProductID, fields)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(product).NotTo(BeNil())
 				Expect(product.ID).To(Equal(TestSingleQueryProductID))

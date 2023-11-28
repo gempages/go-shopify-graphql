@@ -8,9 +8,9 @@ import (
 )
 
 type InventoryService interface {
-	Update(id graphql.ID, input InventoryItemUpdateInput) error
-	Adjust(locationID graphql.ID, input []InventoryAdjustItemInput) error
-	ActivateInventory(locationID graphql.ID, id graphql.ID) error
+	Update(ctx context.Context, id graphql.ID, input InventoryItemUpdateInput) error
+	Adjust(ctx context.Context, locationID graphql.ID, input []InventoryAdjustItemInput) error
+	ActivateInventory(ctx context.Context, locationID graphql.ID, id graphql.ID) error
 }
 
 type InventoryServiceOp struct {
@@ -64,13 +64,13 @@ type InventoryActivateResult struct {
 	UserErrors []UserErrors `json:"userErrors,omitempty"`
 }
 
-func (s *InventoryServiceOp) Update(id graphql.ID, input InventoryItemUpdateInput) error {
+func (s *InventoryServiceOp) Update(ctx context.Context, id graphql.ID, input InventoryItemUpdateInput) error {
 	m := mutationInventoryItemUpdate{}
 	vars := map[string]interface{}{
 		"id":    id,
 		"input": input,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -82,13 +82,13 @@ func (s *InventoryServiceOp) Update(id graphql.ID, input InventoryItemUpdateInpu
 	return nil
 }
 
-func (s *InventoryServiceOp) Adjust(locationID graphql.ID, input []InventoryAdjustItemInput) error {
+func (s *InventoryServiceOp) Adjust(ctx context.Context, locationID graphql.ID, input []InventoryAdjustItemInput) error {
 	m := mutationInventoryBulkAdjustQuantityAtLocation{}
 	vars := map[string]interface{}{
 		"locationId":               locationID,
 		"inventoryItemAdjustments": input,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -100,13 +100,13 @@ func (s *InventoryServiceOp) Adjust(locationID graphql.ID, input []InventoryAdju
 	return nil
 }
 
-func (s *InventoryServiceOp) ActivateInventory(locationID graphql.ID, id graphql.ID) error {
+func (s *InventoryServiceOp) ActivateInventory(ctx context.Context, locationID graphql.ID, id graphql.ID) error {
 	m := mutationInventoryActivate{}
 	vars := map[string]interface{}{
 		"itemID":     id,
 		"locationId": locationID,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}

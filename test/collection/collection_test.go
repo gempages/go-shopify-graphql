@@ -1,6 +1,7 @@
 package collection_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -20,12 +21,14 @@ const (
 
 var _ = Describe("CollectionService", func() {
 	var (
+		ctx           context.Context
 		shopifyClient *shopify.Client
 		domain        string
 		token         string
 	)
 
 	BeforeEach(func() {
+		ctx = context.Background()
 		domain = os.Getenv("SHOPIFY_SHOP_DOMAIN")
 		token = os.Getenv("SHOPIFY_API_TOKEN")
 		opts := []shopifyGraph.Option{
@@ -36,7 +39,7 @@ var _ = Describe("CollectionService", func() {
 
 	Describe("ListAll", func() {
 		It("returns all collections", func() {
-			results, err := shopifyClient.Collection.ListAll()
+			results, err := shopifyClient.Collection.ListAll(ctx)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeEmpty())
 			Expect(len(results)).To(Equal(TotalCollectionCount))
@@ -52,7 +55,7 @@ var _ = Describe("CollectionService", func() {
 	Describe("List", func() {
 		When("no query is provided", func() {
 			It("returns all collections", func() {
-				results, err := shopifyClient.Collection.List("")
+				results, err := shopifyClient.Collection.List(ctx, "")
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(TotalCollectionCount))
@@ -69,7 +72,7 @@ var _ = Describe("CollectionService", func() {
 			It("returns collections with correct IDs", func() {
 				ids := []string{"453231870266", "453231673658"}
 				query := fmt.Sprintf("id:%s", strings.Join(ids, " OR "))
-				results, err := shopifyClient.Collection.List(query)
+				results, err := shopifyClient.Collection.List(ctx, query)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(len(ids)))
@@ -89,7 +92,7 @@ var _ = Describe("CollectionService", func() {
 		It("returns only requested fields", func() {
 			fields := `id title handle`
 			firstLimit := 1
-			results, err := shopifyClient.Collection.ListWithFields(firstLimit, "", "", fields)
+			results, err := shopifyClient.Collection.ListWithFields(ctx, firstLimit, "", "", fields)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeNil())
 			for _, e := range results.Edges {
@@ -106,7 +109,7 @@ var _ = Describe("CollectionService", func() {
 			It("returns 2 collections", func() {
 				fields := `id`
 				firstLimit := 2
-				results, err := shopifyClient.Collection.ListWithFields(firstLimit, "", "", fields)
+				results, err := shopifyClient.Collection.ListWithFields(ctx, firstLimit, "", "", fields)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeNil())
 				Expect(len(results.Edges)).To(Equal(firstLimit))
@@ -118,7 +121,7 @@ var _ = Describe("CollectionService", func() {
 		When("ID does not exist", func() {
 			It("returns not found error", func() {
 				var notExistErr *errors.NotExistsError
-				collection, err := shopifyClient.Collection.Get("gid://shopify/Collection/0000")
+				collection, err := shopifyClient.Collection.Get(ctx, "gid://shopify/Collection/0000")
 				Expect(err).To(BeAssignableToTypeOf(notExistErr))
 				Expect(collection).To(BeNil())
 			})
@@ -126,7 +129,7 @@ var _ = Describe("CollectionService", func() {
 
 		When("ID exists", func() {
 			It("returns the correct product with all of its variants", func() {
-				product, err := shopifyClient.Collection.Get(TestSingleQueryCollectionID)
+				product, err := shopifyClient.Collection.Get(ctx, TestSingleQueryCollectionID)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(product).NotTo(BeNil())
 				Expect(product.ID).To(Equal(TestSingleQueryCollectionID))

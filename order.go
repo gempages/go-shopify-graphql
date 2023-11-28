@@ -10,16 +10,16 @@ import (
 )
 
 type OrderService interface {
-	Get(id graphql.ID) (*OrderQueryResult, error)
+	Get(ctx context.Context, id graphql.ID) (*OrderQueryResult, error)
 
-	List(opts ListOptions) ([]*Order, error)
-	ListAll() ([]*Order, error)
+	List(ctx context.Context, opts ListOptions) ([]*Order, error)
+	ListAll(ctx context.Context) ([]*Order, error)
 
-	ListAfterCursor(opts ListOptions) ([]*OrderQueryResult, string, string, error)
+	ListAfterCursor(ctx context.Context, opts ListOptions) ([]*OrderQueryResult, string, string, error)
 
-	Update(input OrderInput) error
+	Update(ctx context.Context, input OrderInput) error
 
-	GetFulfillmentOrdersAtLocation(orderID graphql.ID, locationID graphql.ID) ([]FulfillmentOrder, error)
+	GetFulfillmentOrdersAtLocation(ctx context.Context, orderID graphql.ID, locationID graphql.ID) ([]FulfillmentOrder, error)
 }
 
 type OrderServiceOp struct {
@@ -345,7 +345,7 @@ fragment lineItem on LineItem {
 }
 `
 
-func (s *OrderServiceOp) Get(id graphql.ID) (*OrderQueryResult, error) {
+func (s *OrderServiceOp) Get(ctx context.Context, id graphql.ID) (*OrderQueryResult, error) {
 	q := fmt.Sprintf(`
 		query order($id: ID!) {
 			node(id: $id){
@@ -392,7 +392,7 @@ func (s *OrderServiceOp) Get(id graphql.ID) (*OrderQueryResult, error) {
 	out := struct {
 		Order *OrderQueryResult `json:"node"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -400,7 +400,7 @@ func (s *OrderServiceOp) Get(id graphql.ID) (*OrderQueryResult, error) {
 	return out.Order, nil
 }
 
-func (s *OrderServiceOp) List(opts ListOptions) ([]*Order, error) {
+func (s *OrderServiceOp) List(ctx context.Context, opts ListOptions) ([]*Order, error) {
 	q := fmt.Sprintf(`
 		{
 			orders(query: "$query"){
@@ -425,7 +425,7 @@ func (s *OrderServiceOp) List(opts ListOptions) ([]*Order, error) {
 	q = strings.ReplaceAll(q, "$query", opts.Query)
 
 	res := []*Order{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
 		return []*Order{}, err
 	}
@@ -433,7 +433,7 @@ func (s *OrderServiceOp) List(opts ListOptions) ([]*Order, error) {
 	return res, nil
 }
 
-func (s *OrderServiceOp) ListAll() ([]*Order, error) {
+func (s *OrderServiceOp) ListAll(ctx context.Context) ([]*Order, error) {
 	q := fmt.Sprintf(`
 		{
 			orders(query: "$query"){
@@ -456,7 +456,7 @@ func (s *OrderServiceOp) ListAll() ([]*Order, error) {
 	`, orderBaseQuery, lineItemFragment)
 
 	res := []*Order{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
 		return []*Order{}, err
 	}
@@ -464,7 +464,7 @@ func (s *OrderServiceOp) ListAll() ([]*Order, error) {
 	return res, nil
 }
 
-func (s *OrderServiceOp) ListAfterCursor(opts ListOptions) ([]*OrderQueryResult, string, string, error) {
+func (s *OrderServiceOp) ListAfterCursor(ctx context.Context, opts ListOptions) ([]*OrderQueryResult, string, string, error) {
 	q := fmt.Sprintf(`
 		query orders($query: String, $first: Int, $last: Int, $before: String, $after: String, $reverse: Boolean) {
 			orders(query: $query, first: $first, last: $last, before: $before, after: $after, reverse: $reverse){
@@ -519,7 +519,7 @@ func (s *OrderServiceOp) ListAfterCursor(opts ListOptions) ([]*OrderQueryResult,
 			} `json:"pageInfo,omitempty"`
 		} `json:"orders,omitempty"`
 	}{}
-	err := s.client.gql.QueryString(context.Background(), q, vars, &out)
+	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, "", "", err
 	}
@@ -538,13 +538,13 @@ func (s *OrderServiceOp) ListAfterCursor(opts ListOptions) ([]*OrderQueryResult,
 	return res, firstCursor, lastCursor, nil
 }
 
-func (s *OrderServiceOp) Update(input OrderInput) error {
+func (s *OrderServiceOp) Update(ctx context.Context, input OrderInput) error {
 	m := mutationOrderUpdate{}
 
 	vars := map[string]interface{}{
 		"input": input,
 	}
-	err := s.client.gql.Mutate(context.Background(), &m, vars)
+	err := s.client.gql.Mutate(ctx, &m, vars)
 	if err != nil {
 		return err
 	}
@@ -556,7 +556,7 @@ func (s *OrderServiceOp) Update(input OrderInput) error {
 	return nil
 }
 
-func (s *OrderServiceOp) GetFulfillmentOrdersAtLocation(orderID graphql.ID, locationID graphql.ID) ([]FulfillmentOrder, error) {
+func (s *OrderServiceOp) GetFulfillmentOrdersAtLocation(ctx context.Context, orderID graphql.ID, locationID graphql.ID) ([]FulfillmentOrder, error) {
 	q := `
 	{
 		order(id:"$id"){
@@ -585,7 +585,7 @@ func (s *OrderServiceOp) GetFulfillmentOrdersAtLocation(orderID graphql.ID, loca
 	q = strings.ReplaceAll(q, "$id", orderID.(string))
 	q = strings.ReplaceAll(q, "$query", fmt.Sprintf(`assigned_location_id:%s`, locationID.(string)))
 	res := []FulfillmentOrder{}
-	err := s.client.BulkOperation.BulkQuery(q, &res)
+	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
 		return []FulfillmentOrder{}, err
 	}
