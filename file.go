@@ -51,15 +51,10 @@ type multipartFormWithFile struct {
 // If you upload an image using 'FileContent,' you need to provide all the data except 'OriginalSource'
 type UploadInput struct {
 	Filename       string
-	OriginalSource *string // Only for upload Image, use OriginalSource when upload by url
-	FileContent    []byte  // use FileContent when upload by file content
 	Mimetype       string
-}
-
-type UploadGenericFileInput struct {
-	Filename    string
-	Mimetype    string
-	FileContent []byte
+	OriginalSource *string   // Only for upload Image, use OriginalSource when upload by url
+	File           io.Reader // use FileContent when upload by file content
+	FileSize       int64
 }
 
 const fileFieldName = "file"
@@ -131,7 +126,7 @@ func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (*model.
 		}
 	} else {
 		// upload via file content
-		fileCreatePayload, err = s.upload(ctx, input.FileContent, input.Filename, input.Mimetype)
+		fileCreatePayload, err = s.upload(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("s.upload: %w", err)
 		}
@@ -140,14 +135,14 @@ func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (*model.
 	return fileCreatePayload, nil
 }
 
-func (s *FileServiceOp) upload(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.FileCreatePayload, error) {
-	fileSize := len(fileContent)
-	stageCreated, err := s.stagedUploadsCreate(cast.ToString(fileSize), fileName, mimetype)
+func (s *FileServiceOp) upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
+	fileSizeStr := cast.ToString(input.FileSize)
+	stageCreated, err := s.stagedUploadsCreate(fileSizeStr, input.Filename, input.Mimetype)
 	if err != nil {
 		return nil, fmt.Errorf("s.stagedUploadsCreate: %w", err)
 	}
 
-	err = s.uploadFileToStage(ctx, fileContent, fileName, stageCreated)
+	err = s.uploadFileToStage(ctx, input.File, input.Filename, fileSizeStr, stageCreated)
 	if err != nil {
 		return nil, fmt.Errorf("s.uploadFileToStage: %w", err)
 	}
@@ -188,7 +183,7 @@ func (s *FileServiceOp) stagedUploadsCreate(fileSize, fileName, mimetype string)
 }
 
 func (s *FileServiceOp) uploadFileToStage(
-	ctx context.Context, file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget,
+	ctx context.Context, file io.Reader, fileName, fileSize string, stageCreated *model.StagedMediaUploadTarget,
 ) error {
 
 	multiForm, err := createMultipartFormWithFile(file, fileName, stageCreated)
@@ -200,7 +195,7 @@ func (s *FileServiceOp) uploadFileToStage(
 	postTempTargetURL := stageCreated.URL
 	postTempTargetHeaders := map[string]string{
 		"Content-Type":   multiForm.contentType,
-		"Content-Length": cast.ToString(len(file)),
+		"Content-Length": fileSize,
 	}
 
 	err = performHTTPPostWithHeaders(ctx, *postTempTargetURL, multiForm.data, postTempTargetHeaders)
@@ -295,9 +290,7 @@ func (s *FileServiceOp) Delete(ctx context.Context, fileID []graphql.ID) ([]stri
 }
 
 func createMultipartFormWithFile(
-	file []byte, fileName string, stageCreated *model.StagedMediaUploadTarget) (*multipartFormWithFile, error) {
-	// Create a buffer to store the file contents
-	fileBuffer := bytes.NewBuffer(file)
+	file io.Reader, fileName string, stageCreated *model.StagedMediaUploadTarget) (*multipartFormWithFile, error) {
 
 	// Create a multipart form and add parameters
 	form := &bytes.Buffer{}
@@ -312,7 +305,7 @@ func createMultipartFormWithFile(
 	if err != nil {
 		return nil, fmt.Errorf("writer.CreateFormFile: %w", err)
 	}
-	_, err = io.Copy(fileWriter, fileBuffer)
+	_, err = io.Copy(fileWriter, file)
 	if err != nil {
 		return nil, fmt.Errorf("io.Copy: %w", err)
 	}
