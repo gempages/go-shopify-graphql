@@ -51,7 +51,7 @@ type multipartFormWithFile struct {
 // If you upload an image using 'FileContent,' you need to provide all the data except 'OriginalSource'
 type UploadInput struct {
 	Filename       string
-	OriginalSource *string // Only for unload Image, use OriginalSource when upload by url
+	OriginalSource *string // Only for upload Image, use OriginalSource when upload by url
 	FileContent    []byte  // use FileContent when upload by file content
 	Mimetype       string
 }
