@@ -16,7 +16,7 @@ import (
 )
 
 type FileService interface {
-	UploadGenericFile(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error)
+	UploadGenericFile(ctx context.Context, input *UploadGenericFileInput) (*model.GenericFile, error)
 	UploadMediaImage(ctx context.Context, input *UploadMediaImageInput) (*model.MediaImage, error)
 	QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error)
 	QueryMediaImage(ctx context.Context, fileID string) (*model.MediaImage, error)
@@ -54,6 +54,12 @@ type UploadMediaImageInput struct {
 	OriginalSource *string // use OriginalSource when upload by url
 	FileContent    []byte  // use FileContent when upload by file content
 	Mimetype       string
+}
+
+type UploadGenericFileInput struct {
+	Filename    string
+	Mimetype    string
+	FileContent []byte
 }
 
 const fileFieldName = "file"
@@ -111,8 +117,8 @@ func (s *FileServiceOp) QueryMediaImage(ctx context.Context, fileID string) (*mo
 	return file.(*model.MediaImage), nil
 }
 
-func (s *FileServiceOp) UploadGenericFile(ctx context.Context, fileContent []byte, fileName, mimetype string) (*model.GenericFile, error) {
-	fileCreatePayload, err := s.upload(ctx, fileContent, fileName, mimetype, model.StagedUploadTargetGenerateUploadResourceFile)
+func (s *FileServiceOp) UploadGenericFile(ctx context.Context, input *UploadGenericFileInput) (*model.GenericFile, error) {
+	fileCreatePayload, err := s.upload(ctx, input.FileContent, input.Filename, input.Mimetype, model.StagedUploadTargetGenerateUploadResourceFile)
 	if err != nil {
 		return nil, fmt.Errorf("s.upload: %w", err)
 	}
