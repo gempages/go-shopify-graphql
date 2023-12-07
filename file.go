@@ -48,12 +48,12 @@ type multipartFormWithFile struct {
 
 // UploadInput
 // In the case of uploading an image via URL, we only need to provide the 'OriginalSource' parameter
-// If you upload an image using 'FileContent,' you need to provide all the data except 'OriginalSource'
+// If you upload an image using 'File,' you need to provide all the data except 'OriginalSource'
 type UploadInput struct {
 	Filename       string
 	Mimetype       string
 	OriginalSource *string   // Only for upload Image, use OriginalSource when upload by url
-	File           io.Reader // use FileContent when upload by file content
+	File           io.Reader // use File when upload by file
 	FileSize       int64
 }
 
@@ -125,7 +125,7 @@ func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (*model.
 			return nil, fmt.Errorf("s.fileCreate: %w", err)
 		}
 	} else {
-		// upload via file content
+		// upload via file
 		fileCreatePayload, err = s.upload(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("s.upload: %w", err)
