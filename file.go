@@ -48,7 +48,7 @@ type multipartFormWithFile struct {
 
 // UploadInput
 // In the case of uploading an image via URL, we only need to provide the 'OriginalSource' parameter
-// If you upload an image using 'File,' you need to provide all the data except 'OriginalSource'
+// If you upload an image using 'File' you need to provide all the data except 'OriginalSource'
 type UploadInput struct {
 	Filename       string
 	Mimetype       string
