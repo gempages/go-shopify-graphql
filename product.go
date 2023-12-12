@@ -17,8 +17,6 @@ type ProductService interface {
 	Get(ctx context.Context, id string) (*model.Product, error)
 	GetWithFields(ctx context.Context, id string, fields string) (*model.Product, error)
 	GetSingleProductCollection(ctx context.Context, id string, cursor string) (*model.Product, error)
-	GetSingleProductVariant(ctx context.Context, id string, cursor string) (*model.Product, error)
-	GetSingleProduct(ctx context.Context, id string) (*model.Product, error)
 
 	Create(ctx context.Context, product model.ProductInput, media []model.CreateMediaInput) (output *model.Product, err error)
 	Update(ctx context.Context, product model.ProductInput) (output *model.Product, err error)
@@ -83,75 +81,6 @@ const productBaseQuery = `
 	templateSuffix
 `
 
-var singleProductQueryVariant = fmt.Sprintf(`
-  id
-  variants(first: 100) {
-    edges {
-      node {
-        id
-		createdAt
-		updatedAt
-        legacyResourceId
-        sku
-        selectedOptions {
-          name
-          value
-        }
-        compareAtPrice
-        price
-        inventoryQuantity
-		image {
-			altText
-			height
-			id
-			src
-			width
-		}
-        barcode
-        title
-        inventoryPolicy
-        inventoryManagement
-        weightUnit
-        weight
-		position
-      }
-      cursor
-    }
-  }
-
-`)
-
-var singleProductQueryVariantWithCursor = fmt.Sprintf(`
-  id
-  variants(first: 100, after: $cursor) {
-    edges {
-      node {
-        id
-		createdAt
-		updatedAt
-        legacyResourceId
-        sku
-        selectedOptions {
-          name
-          value
-        }
-        compareAtPrice
-        price
-        inventoryQuantity
-        barcode
-        title
-        inventoryPolicy
-        inventoryManagement
-        weightUnit
-        weight
-		position
-      }
-      cursor
-    }
-  }
-
-`)
-
 var singleProductQueryCollection = fmt.Sprintf(`
   id
   collections(first:250) {
@@ -200,7 +129,7 @@ var singleProductQueryCollectionWithCursor = fmt.Sprintf(`
 
 var productQuery = fmt.Sprintf(`
 	%s
-	variants(first:100, after: $cursor){
+	variants(first: 250, after: $variantAfter) {
 		edges{
 			node{
 				id
@@ -226,6 +155,7 @@ var productQuery = fmt.Sprintf(`
 		}
 		pageInfo{
 			hasNextPage
+			endCursor
 		}
 	}
 `, productBaseQuery)
@@ -436,7 +366,7 @@ func (s *ProductServiceOp) ListWithFields(ctx context.Context, query, fields str
 }
 
 func (s *ProductServiceOp) Get(ctx context.Context, id string) (*model.Product, error) {
-	out, err := s.getPage(ctx, id, "")
+	out, err := s.getPage(ctx, id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -444,9 +374,9 @@ func (s *ProductServiceOp) Get(ctx context.Context, id string) (*model.Product, 
 	nextPageData := out
 	if out != nil && out.Variants != nil && out.Variants.PageInfo != nil {
 		hasNextPage := out.Variants.PageInfo.HasNextPage
-		for hasNextPage && len(nextPageData.Variants.Edges) > 0 {
-			cursor := nextPageData.Variants.Edges[len(nextPageData.Variants.Edges)-1].Cursor
-			nextPageData, err := s.getPage(ctx, id, cursor)
+		for hasNextPage && nextPageData.Variants.PageInfo.EndCursor != nil {
+			cursor := nextPageData.Variants.PageInfo.EndCursor
+			nextPageData, err = s.getPage(ctx, id, cursor)
 			if err != nil {
 				return nil, err
 			}
@@ -458,9 +388,9 @@ func (s *ProductServiceOp) Get(ctx context.Context, id string) (*model.Product, 
 	return out, nil
 }
 
-func (s *ProductServiceOp) getPage(ctx context.Context, id string, cursor string) (*model.Product, error) {
+func (s *ProductServiceOp) getPage(ctx context.Context, id string, variantAfter *string) (*model.Product, error) {
 	q := fmt.Sprintf(`
-		query product($id: ID!, $cursor: String) {
+		query product($id: ID!, $variantAfter: String) {
 			product(id: $id){
 				%s
 			}
@@ -468,10 +398,8 @@ func (s *ProductServiceOp) getPage(ctx context.Context, id string, cursor string
 	`, productQuery)
 
 	vars := map[string]interface{}{
-		"id": id,
-	}
-	if cursor != "" {
-		vars["cursor"] = cursor
+		"id":           id,
+		"variantAfter": variantAfter,
 	}
 
 	out := model.QueryRoot{}
@@ -540,74 +468,6 @@ func (s *ProductServiceOp) GetSingleProductCollection(ctx context.Context, id st
 	}
 	if cursor != "" {
 		vars["cursor"] = cursor
-	}
-
-	out := model.QueryRoot{}
-	err := s.client.gql.QueryString(ctx, q, vars, &out)
-	if err != nil {
-		return nil, err
-	}
-
-	if out.Product == nil {
-		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
-	}
-
-	return out.Product, nil
-}
-
-func (s *ProductServiceOp) GetSingleProductVariant(ctx context.Context, id string, cursor string) (*model.Product, error) {
-	q := ""
-	if cursor != "" {
-		q = fmt.Sprintf(`
-    query product($id: ID!, $cursor: String) {
-      product(id: $id){
-        %s
-      }
-    }
-    `, singleProductQueryVariantWithCursor)
-	} else {
-		q = fmt.Sprintf(`
-    query product($id: ID!) {
-      product(id: $id){
-        %s
-      }
-    }
-    `, singleProductQueryVariant)
-	}
-
-	vars := map[string]interface{}{
-		"id": id,
-	}
-	if cursor != "" {
-		vars["cursor"] = cursor
-	}
-
-	out := model.QueryRoot{}
-	err := s.client.gql.QueryString(ctx, q, vars, &out)
-	if err != nil {
-		return nil, err
-	}
-
-	if out.Product == nil {
-		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
-	}
-
-	return out.Product, nil
-}
-
-func (s *ProductServiceOp) GetSingleProduct(ctx context.Context, id string) (*model.Product, error) {
-	q := fmt.Sprintf(`
-		query product($id: ID!) {
-			product(id: $id){
-				%s
-				%s
-				%s
-			}
-		}
-	`, productBaseQuery, singleProductQueryVariant, singleProductQueryCollection)
-
-	vars := map[string]interface{}{
-		"id": id,
 	}
 
 	out := model.QueryRoot{}
