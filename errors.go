@@ -37,11 +37,7 @@ func IsRateLimitError(err error) bool {
 	if err == nil {
 		return false
 	}
-	return errors.Is(err, graphql.ErrMaxCostExceeded)
-}
-
-func IsTooManyRequestsError(err error) bool {
-	return err != nil &&
+	return errors.Is(err, graphql.ErrMaxCostExceeded) ||
 		(strings.Contains(err.Error(), "Reduce request rates to resume uninterrupted service") ||
 			strings.Contains(err.Error(), "The rate of change to"))
 }
