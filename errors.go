@@ -20,17 +20,11 @@ func IsPermissionError(err error) bool {
 }
 
 func IsPaymentRequiredError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return errors.Is(err, graphql.ErrPaymentRequired)
+	return err != nil && errors.Is(err, graphql.ErrPaymentRequired)
 }
 
 func IsLockedError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return errors.Is(err, graphql.ErrLocked)
+	return err != nil && errors.Is(err, graphql.ErrLocked)
 }
 
 func IsRateLimitError(err error) bool {
@@ -47,29 +41,21 @@ func IsNotExistError(err error) bool {
 }
 
 func IsUnauthorizedError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return errors.Is(err, graphql.ErrUnauthorized)
+	return err != nil && errors.Is(err, graphql.ErrUnauthorized)
 }
 
 func IsForbiddenError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return errors.Is(err, graphql.ErrForbidden)
+	return err != nil && errors.Is(err, graphql.ErrForbidden)
 }
 
 func IsNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return errors.Is(err, graphql.ErrNotFound)
+	return err != nil && errors.Is(err, graphql.ErrNotFound)
 }
 
 func IsInternalError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return errors.Is(err, graphql.ErrInternal)
+	return err != nil && errors.Is(err, graphql.ErrInternal)
+}
+
+func IsAddressTakenError(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Address for this topic has already been taken")
 }
