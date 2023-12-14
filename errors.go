@@ -42,6 +42,10 @@ func IsRateLimitError(err error) bool {
 		strings.Contains(err.Error(), "The rate of change to")
 }
 
+func IsNotExist(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "FILE_DOES_NOT_EXIST")
+}
+
 func IsUnauthorizedError(err error) bool {
 	if err == nil {
 		return false
