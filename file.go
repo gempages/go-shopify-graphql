@@ -18,6 +18,7 @@ import (
 
 type FileService interface {
 	Upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error)
+	QueryFile(ctx context.Context, fileID string) (model.File, error)
 	QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error)
 	QueryMediaImage(ctx context.Context, fileID string) (*model.MediaImage, error)
 	Delete(ctx context.Context, fileID []graphql.ID) ([]string, error)
@@ -98,6 +99,15 @@ const queryGenericFile = `
 			}
 		}
 	`
+
+func (s *FileServiceOp) QueryFile(ctx context.Context, fileID string) (model.File, error) {
+	file, err := s.queryFile(ctx, fileID)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
+}
 
 func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error) {
 	file, err := s.queryFile(ctx, fileID)
