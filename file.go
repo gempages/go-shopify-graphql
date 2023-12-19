@@ -101,12 +101,7 @@ const queryGenericFile = `
 	`
 
 func (s *FileServiceOp) QueryFile(ctx context.Context, fileID string) (model.File, error) {
-	file, err := s.queryFile(ctx, fileID)
-	if err != nil {
-		return nil, err
-	}
-
-	return file, nil
+	return s.queryFile(ctx, fileID)
 }
 
 func (s *FileServiceOp) QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error) {
