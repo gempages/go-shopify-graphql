@@ -86,6 +86,11 @@ const queryGenericFile = `
 								width
 								height
 							}
+							mediaErrors {
+								code
+								details
+								message
+							}
 							__typename
 						}
 					}
