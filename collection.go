@@ -3,7 +3,6 @@ package shopify
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
@@ -12,9 +11,7 @@ import (
 )
 
 type CollectionService interface {
-	List(ctx context.Context, query string) ([]*model.Collection, error)
-	ListAll(ctx context.Context) ([]*model.Collection, error)
-	ListByCursor(ctx context.Context, first int, cursor string) (*model.CollectionConnection, error)
+	List(ctx context.Context, opts ...QueryOption) ([]*model.Collection, error)
 	ListWithFields(ctx context.Context, first int, cursor string, query string, fields string) (*model.CollectionConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Collection, error)
@@ -159,20 +156,15 @@ var collectionWithProductsBulkQuery = `
 	}
 `
 
-func (s *CollectionServiceOp) List(ctx context.Context, query string) ([]*model.Collection, error) {
-	q := fmt.Sprintf(`
-		{
-			collections(query: "$query"){
-				edges{
-					node{
-						%s
-					}
-				}
-			}
-		}
-	`, collectionWithProductsBulkQuery)
-
-	q = strings.ReplaceAll(q, "$query", query)
+func (s *CollectionServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*model.Collection, error) {
+	b := &bulkQueryBuilder{
+		operationName: "collections",
+		fields:        collectionWithProductsBulkQuery,
+	}
+	for _, opt := range opts {
+		opt(b)
+	}
+	q := b.Build()
 
 	res := make([]*model.Collection, 0)
 	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
@@ -181,61 +173,6 @@ func (s *CollectionServiceOp) List(ctx context.Context, query string) ([]*model.
 	}
 
 	return res, nil
-}
-
-func (s *CollectionServiceOp) ListAll(ctx context.Context) ([]*model.Collection, error) {
-	q := fmt.Sprintf(`
-		{
-			collections{
-				edges{
-					node{
-						%s
-					}
-				}
-			}
-		}
-	`, collectionWithProductsBulkQuery)
-
-	res := make([]*model.Collection, 0)
-	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
-	if err != nil {
-		return nil, fmt.Errorf("bulk query: %w", err)
-	}
-
-	return res, nil
-}
-
-func (s *CollectionServiceOp) ListByCursor(ctx context.Context, first int, cursor string) (*model.CollectionConnection, error) {
-	q := fmt.Sprintf(`
-		query collections($first: Int!, $cursor: String) {
-			collections(first: $first, after: $cursor){
-                edges{
-					node {
-						%s
-					}
-                    cursor
-                }
-                pageInfo {
-                      hasNextPage
-                }
-			}
-		}
-	`, collectionBulkQuery)
-
-	vars := map[string]interface{}{
-		"first": first,
-	}
-	if cursor != "" {
-		vars["cursor"] = cursor
-	}
-
-	out := model.QueryRoot{}
-	err := s.client.gql.QueryString(ctx, q, vars, &out)
-	if err != nil {
-		return nil, err
-	}
-
-	return out.Collections, nil
 }
 
 func (s *CollectionServiceOp) ListWithFields(ctx context.Context, first int, cursor, query, fields string) (*model.CollectionConnection, error) {
