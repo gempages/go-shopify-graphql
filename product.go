@@ -3,15 +3,13 @@ package shopify
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 )
 
 type ProductService interface {
-	List(ctx context.Context, query string) ([]*model.Product, error)
-	ListAll(ctx context.Context) ([]*model.Product, error)
+	List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error)
 	ListWithFields(ctx context.Context, query string, fields string, first int, after string) (*model.ProductConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Product, error)
@@ -279,42 +277,15 @@ var productBulkQuery = fmt.Sprintf(`
 	}
 `, productBaseQuery)
 
-func (s *ProductServiceOp) ListAll(ctx context.Context) ([]*model.Product, error) {
-	q := fmt.Sprintf(`
-		query products{
-			products{
-				edges{
-					node{
-						%s
-					}
-				}
-			}
-		}
-	`, productBulkQuery)
-
-	res := make([]*model.Product, 0)
-	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
-	if err != nil {
-		return nil, fmt.Errorf("bulk query: %w", err)
+func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error) {
+	b := &bulkQueryBuilder{
+		operationName: "products",
+		fields:        productBulkQuery,
 	}
-
-	return res, nil
-}
-
-func (s *ProductServiceOp) List(ctx context.Context, query string) ([]*model.Product, error) {
-	q := fmt.Sprintf(`
-		query products {
-			products(query: "$query") {
-				edges{
-					node{
-						%s
-					}
-				}
-			}
-		}
-	`, productBulkQuery)
-
-	q = strings.ReplaceAll(q, "$query", query)
+	for _, opt := range opts {
+		opt(b)
+	}
+	q := b.Build()
 
 	res := make([]*model.Product, 0)
 	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)

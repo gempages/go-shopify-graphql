@@ -37,25 +37,10 @@ var _ = Describe("CollectionService", func() {
 		shopifyClient = shopify.NewClientWithOpts(domain, opts...)
 	})
 
-	Describe("ListAll", func() {
-		It("returns all collections", func() {
-			results, err := shopifyClient.Collection.ListAll(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(results).NotTo(BeEmpty())
-			Expect(len(results)).To(Equal(TotalCollectionCount))
-			for i := range results {
-				Expect(results[i].ID).NotTo(BeEmpty())
-				Expect(results[i].Title).NotTo(BeEmpty())
-				Expect(results[i].Handle).NotTo(BeEmpty())
-				Expect(results[i].Products).NotTo(BeNil())
-			}
-		})
-	})
-
 	Describe("List", func() {
 		When("no query is provided", func() {
 			It("returns all collections", func() {
-				results, err := shopifyClient.Collection.List(ctx, "")
+				results, err := shopifyClient.Collection.List(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(TotalCollectionCount))
@@ -72,7 +57,7 @@ var _ = Describe("CollectionService", func() {
 			It("returns collections with correct IDs", func() {
 				ids := []string{"453231870266", "453231673658"}
 				query := fmt.Sprintf("id:%s", strings.Join(ids, " OR "))
-				results, err := shopifyClient.Collection.List(ctx, query)
+				results, err := shopifyClient.Collection.List(ctx, shopify.WithQuery(query))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(len(ids)))

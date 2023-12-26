@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gempages/go-helper/tracing"
@@ -262,6 +263,42 @@ func (s *BulkOperationServiceOp) GetBulkQueryResult(ctx context.Context, id grap
 		return q, err
 	}
 	return q, nil
+}
+
+type bulkQueryBuilder struct {
+	operationName string
+	fields        string
+	query         *string
+}
+
+func (b *bulkQueryBuilder) SetFields(fields string) {
+	b.fields = fields
+}
+
+func (b *bulkQueryBuilder) SetQuery(query string) {
+	b.query = &query
+}
+
+func (b *bulkQueryBuilder) Build() string {
+	var (
+		q       = strings.ReplaceAll(`query $operation { $operation`, "$operation", b.operationName)
+		vars    = make([]string, 0)
+		varsStr string
+	)
+	if b.query != nil {
+		vars = append(vars, fmt.Sprintf(`query: "%s"`, *b.query))
+	}
+	if len(vars) > 0 {
+		varsStr = "(" + strings.Join(vars, ", ") + ")"
+	}
+	q = fmt.Sprintf(`%s%s {
+	edges {
+		node {
+			%s
+		}
+	}
+}}`, q, varsStr, b.fields)
+	return q
 }
 
 func parseBulkQueryResult(resultFilePath string, out interface{}) error {
