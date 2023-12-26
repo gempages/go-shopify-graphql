@@ -38,28 +38,10 @@ var _ = Describe("ProductService", func() {
 		shopifyClient = shopify.NewClientWithOpts(domain, opts...)
 	})
 
-	Describe("ListAll", func() {
-		It("returns all products", func() {
-			results, err := shopifyClient.Product.ListAll(ctx)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(results).NotTo(BeEmpty())
-			Expect(len(results)).To(Equal(TotalProductCount))
-			for i := range results {
-				Expect(results[i].ID).NotTo(BeEmpty())
-				Expect(results[i].Title).NotTo(BeEmpty())
-				Expect(results[i].Handle).NotTo(BeEmpty())
-				Expect(results[i].Images).NotTo(BeNil())
-				Expect(results[i].Media).NotTo(BeNil())
-				Expect(results[i].Variants).NotTo(BeNil())
-				Expect(results[i].CreatedAt).NotTo(BeZero())
-			}
-		})
-	})
-
 	Describe("List", func() {
 		When("no query is provided", func() {
 			It("returns all products", func() {
-				results, err := shopifyClient.Product.List(ctx, "")
+				results, err := shopifyClient.Product.List(ctx)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(TotalProductCount))
@@ -75,11 +57,11 @@ var _ = Describe("ProductService", func() {
 			})
 		})
 
-		When("id query is provided", func() {
+		When("ID query option is provided", func() {
 			It("returns products with correct IDs", func() {
 				ids := []string{"8427241144634", "8427240423738", "8427239178554"}
 				query := fmt.Sprintf("id:%s", strings.Join(ids, " OR "))
-				results, err := shopifyClient.Product.List(ctx, query)
+				results, err := shopifyClient.Product.List(ctx, shopify.WithQuery(query))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeEmpty())
 				Expect(len(results)).To(Equal(len(ids)))
@@ -93,6 +75,24 @@ var _ = Describe("ProductService", func() {
 					Expect(results[i].Media).NotTo(BeNil())
 					Expect(results[i].Variants).NotTo(BeNil())
 					Expect(results[i].CreatedAt).NotTo(BeZero())
+				}
+			})
+		})
+
+		When("fields option is provided", func() {
+			It("returns only requested fields", func() {
+				fields := `id title handle`
+				results, err := shopifyClient.Product.List(ctx, shopify.WithFields(fields))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(results).NotTo(BeEmpty())
+				for i := range results {
+					Expect(results[i].ID).NotTo(BeEmpty())
+					Expect(results[i].Title).NotTo(BeEmpty())
+					Expect(results[i].Handle).NotTo(BeEmpty())
+					Expect(results[i].Images).To(BeNil())
+					Expect(results[i].Media).To(BeNil())
+					Expect(results[i].Variants).To(BeNil())
+					Expect(results[i].CreatedAt).To(BeZero())
 				}
 			})
 		})

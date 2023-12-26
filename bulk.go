@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gempages/go-helper/tracing"
@@ -21,6 +22,7 @@ import (
 	"github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -262,6 +264,46 @@ func (s *BulkOperationServiceOp) GetBulkQueryResult(ctx context.Context, id grap
 		return q, err
 	}
 	return q, nil
+}
+
+type bulkQueryBuilder struct {
+	operationName string
+	fields        string
+	query         *string
+	reverse       *bool
+	savedSearchID *string
+	sortKey       *string
+}
+
+func (b *bulkQueryBuilder) Build() string {
+	var (
+		q       = strings.ReplaceAll(`query $operation { $operation`, "$operation", b.operationName)
+		vars    = make([]string, 0)
+		varsStr string
+	)
+	if b.query != nil {
+		vars = append(vars, fmt.Sprintf(`query: "%s"`, *b.query))
+	}
+	if b.reverse != nil {
+		vars = append(vars, fmt.Sprintf(`reverse: %s`, cast.ToString(b.reverse)))
+	}
+	if b.savedSearchID != nil {
+		vars = append(vars, fmt.Sprintf(`savedSearchId: "%s"`, *b.savedSearchID))
+	}
+	if b.sortKey != nil {
+		vars = append(vars, fmt.Sprintf(`sortKey: %s`, *b.sortKey))
+	}
+	if len(vars) > 0 {
+		varsStr = "(" + strings.Join(vars, ", ") + ")"
+	}
+	q = fmt.Sprintf(`%s%s {
+	edges {
+		node {
+			%s
+		}
+	}
+}}`, q, varsStr, b.fields)
+	return q
 }
 
 func parseBulkQueryResult(resultFilePath string, out interface{}) error {
