@@ -25,7 +25,7 @@ type Option func(t *transport)
 // WithVersion optionally sets the API version if the passed string is valid
 func WithVersion(apiVersion string) Option {
 	return func(t *transport) {
-		if apiVersion != "" {
+		if apiVersion != "" && apiVersion != "latest" {
 			apiPathPrefix = fmt.Sprintf("admin/api/%s", apiVersion)
 		} else {
 			apiPathPrefix = "admin/api"
@@ -35,7 +35,7 @@ func WithVersion(apiVersion string) Option {
 
 func WithStoreFrontVersion(apiVersion string) Option {
 	return func(t *transport) {
-		if apiVersion != "" {
+		if apiVersion != "" && apiVersion != "latest" {
 			apiPathPrefix = fmt.Sprintf("api/%s", apiVersion)
 		} else {
 			apiPathPrefix = "api"
