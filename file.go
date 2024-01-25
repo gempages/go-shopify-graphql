@@ -100,6 +100,23 @@ const queryGenericFile = `
 		}
 	`
 
+const mutaionTileCreate = `
+mutation fileCreate($files: [FileCreateInput!]!) {
+	fileCreate(files: $files) {
+		files {
+			id
+			alt
+			fileStatus
+			__typename
+		}
+		userErrors {
+			field
+			message
+		}
+	}
+}
+`
+
 func (s *FileServiceOp) QueryFile(ctx context.Context, fileID string) (model.File, error) {
 	return s.queryFile(ctx, fileID)
 }
@@ -227,24 +244,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*mo
 		},
 	}
 
-	m := `
-	mutation fileCreate($files: [FileCreateInput!]!) {
-		fileCreate(files: $files) {
-			files {
-				id
-				alt
-				fileStatus
-				__typename
-			}
-			userErrors {
-				field
-				message
-			}
-		}
-	}
-	`
-
-	err := s.client.gql.MutateString(ctx, m, vars, &out)
+	err := s.client.gql.MutateString(context.Background(), mutaionTileCreate, vars, &out)
 	if err != nil {
 		return nil, err
 	}
