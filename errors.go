@@ -56,6 +56,14 @@ func IsInternalError(err error) bool {
 	return err != nil && errors.Is(err, graphql.ErrInternal)
 }
 
+func IsServiceUnavailable(err error) bool {
+	return err != nil && errors.Is(err, graphql.ErrServiceUnavailable)
+}
+
+func IsGatewayTimeout(err error) bool {
+	return err != nil && errors.Is(err, graphql.ErrGatewayTimeout)
+}
+
 func IsAddressTakenError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "Address for this topic has already been taken")
 }

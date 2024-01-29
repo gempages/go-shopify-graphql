@@ -13,9 +13,10 @@ import (
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-helper/tracing"
-	"github.com/gempages/go-shopify-graphql/utils"
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/context/ctxhttp"
+
+	"github.com/gempages/go-shopify-graphql/utils"
 )
 
 const MaxCostExceeded = "MAX_COST_EXCEEDED"
@@ -151,6 +152,12 @@ func (c *Client) doRequest(ctx context.Context, body io.Reader, v interface{}) e
 	if resp.StatusCode == http.StatusInternalServerError {
 		return ErrInternal
 	}
+	if resp.StatusCode == http.StatusServiceUnavailable {
+		return ErrServiceUnavailable
+	}
+	if resp.StatusCode == http.StatusGatewayTimeout {
+		return ErrGatewayTimeout
+	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return errors.NewErrorWithContext(ctx, fmt.Errorf("non-200 OK status code: %v", resp.Status), map[string]any{"body": string(body)})
@@ -188,7 +195,8 @@ func (c *Client) shouldRetry(err error) bool {
 	if uerr, isURLErr := err.(*url.Error); isURLErr {
 		return uerr.Timeout() || uerr.Temporary()
 	}
-	return isThrottledError(err) || isConnectionError(err) || errors.Is(err, ErrMaxCostExceeded)
+	return isThrottledError(err) || isConnectionError(err) || errors.Is(err, ErrMaxCostExceeded) ||
+		errors.Is(err, ErrGatewayTimeout) || errors.Is(err, ErrServiceUnavailable)
 }
 
 // errors represents the "errors" array in a response from a GraphQL server.
