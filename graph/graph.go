@@ -13,10 +13,10 @@ const (
 )
 
 var (
-	apiProtocol       = "https"
-	apiPathPrefix     = "admin/api"
-	defaultAPIVersion = "2024-01"
-	apiEndpoint       = "graphql.json"
+	apiProtocol          = "https"
+	defaultAPIPathPrefix = "admin/api"
+	defaultAPIVersion    = "2024-01"
+	apiEndpoint          = "graphql.json"
 )
 
 // Option is used to configure options
@@ -49,6 +49,7 @@ func WithToken(token string) Option {
 func WithStoreFrontToken(token string) Option {
 	return func(t *transport) {
 		t.storeFrontAccessToken = token
+		t.apiPath = "api"
 	}
 }
 
@@ -66,6 +67,7 @@ type transport struct {
 	apiKey                string
 	password              string
 	apiVersion            string
+	apiPath               string
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -83,6 +85,7 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 // NewClient creates a new client (in fact, just a simple wrapper for a graphql.Client)
 func NewClient(shopifyDomain string, opts ...Option) *graphql.Client {
 	trans := &transport{
+		apiPath:    defaultAPIPathPrefix,
 		apiVersion: defaultAPIVersion,
 	}
 
@@ -91,11 +94,11 @@ func NewClient(shopifyDomain string, opts ...Option) *graphql.Client {
 	}
 
 	httpClient := &http.Client{Transport: trans}
-	url := buildAPIEndpoint(shopifyDomain, trans.apiVersion)
+	url := buildAPIEndpoint(shopifyDomain, trans.apiPath, trans.apiVersion)
 	graphClient := graphql.NewClient(url, httpClient)
 	return graphClient
 }
 
-func buildAPIEndpoint(domain string, version string) string {
-	return fmt.Sprintf("%s://%s/%s/%s/%s", apiProtocol, domain, apiPathPrefix, version, apiEndpoint)
+func buildAPIEndpoint(domain string, path string, version string) string {
+	return fmt.Sprintf("%s://%s/%s/%s/%s", apiProtocol, domain, path, version, apiEndpoint)
 }
