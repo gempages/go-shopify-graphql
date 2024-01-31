@@ -8,16 +8,15 @@ import (
 )
 
 const (
-	shopifyBaseDomain                  = "myshopify.com"
 	shopifyAccessTokenHeader           = "X-Shopify-Access-Token"
 	shopifyStoreFrontAccessTokenHeader = "X-Shopify-Storefront-Access-Token"
 )
 
 var (
-	apiProtocol   = "https"
-	apiPathPrefix = "admin/api"
-	apiVersion    = "2024-01"
-	apiEndpoint   = "graphql.json"
+	apiProtocol       = "https"
+	apiPathPrefix     = "admin/api"
+	defaultAPIVersion = "2024-01"
+	apiEndpoint       = "graphql.json"
 )
 
 // Option is used to configure options
@@ -27,7 +26,7 @@ type Option func(t *transport)
 func WithVersion(graphqlApiVersion string) Option {
 	return func(t *transport) {
 		if graphqlApiVersion != "" && graphqlApiVersion != "latest" {
-			apiVersion = graphqlApiVersion
+			t.apiVersion = graphqlApiVersion
 		}
 	}
 }
@@ -35,9 +34,7 @@ func WithVersion(graphqlApiVersion string) Option {
 func WithStoreFrontVersion(apiVersion string) Option {
 	return func(t *transport) {
 		if apiVersion != "" && apiVersion != "latest" {
-			apiPathPrefix = fmt.Sprintf("api/%s", apiVersion)
-		} else {
-			apiPathPrefix = "api"
+			t.apiVersion = apiVersion
 		}
 	}
 }
@@ -68,6 +65,7 @@ type transport struct {
 	storeFrontAccessToken string
 	apiKey                string
 	password              string
+	apiVersion            string
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -83,20 +81,21 @@ func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 // NewClient creates a new client (in fact, just a simple wrapper for a graphql.Client)
-func NewClient(shopName string, opts ...Option) *graphql.Client {
-	trans := &transport{}
+func NewClient(shopifyDomain string, opts ...Option) *graphql.Client {
+	trans := &transport{
+		apiVersion: defaultAPIVersion,
+	}
 
 	for _, opt := range opts {
 		opt(trans)
 	}
 
 	httpClient := &http.Client{Transport: trans}
-	url := buildAPIEndpoint(shopName)
+	url := buildAPIEndpoint(shopifyDomain, trans.apiVersion)
 	graphClient := graphql.NewClient(url, httpClient)
 	return graphClient
 }
 
-func buildAPIEndpoint(shopName string) string {
-	return fmt.Sprintf("%s://%s/%s/%s/%s", apiProtocol, shopName, apiPathPrefix, apiVersion, apiEndpoint)
-	// return fmt.Sprintf("%s://%s.%s/%s/%s", apiProtocol, shopName, shopifyBaseDomain, apiPathPrefix, apiEndpoint)
+func buildAPIEndpoint(domain string, version string) string {
+	return fmt.Sprintf("%s://%s/%s/%s/%s", apiProtocol, domain, apiPathPrefix, version, apiEndpoint)
 }
