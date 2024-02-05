@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gempages/go-helper/errors"
+	gpstrings "github.com/gempages/go-helper/strings"
 	"github.com/gempages/go-helper/tracing"
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/context/ctxhttp"
@@ -160,24 +161,24 @@ func (c *Client) doRequest(ctx context.Context, body io.Reader, v interface{}) e
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return errors.NewErrorWithContext(ctx, fmt.Errorf("non-200 OK status code: %v", resp.Status), map[string]any{"body": string(body)})
+		return errors.NewErrorWithContext(ctx, fmt.Errorf("non-200 OK status code: %v", resp.Status), map[string]any{
+			"body": gpstrings.CutLength(string(body), 500)})
 	}
 	var out struct {
 		Data   *json.RawMessage
 		Errors graphErrors
-		// Extensions interface{} // Unused.
 	}
 	err = json.NewDecoder(resp.Body).Decode(&out)
 	if err != nil {
-		// TODO: Consider including response body in returned error, if deemed helpful.
-		return err
+		body, _ := io.ReadAll(resp.Body)
+		return errors.NewErrorWithContext(ctx, fmt.Errorf("JSON decode response: %w", err), map[string]any{
+			"body": gpstrings.CutLength(string(body), 500)})
 	}
-	// xx := make(map[string]interface{})
 	if out.Data != nil {
 		err := json.Unmarshal(*out.Data, v)
 		if err != nil {
-			// TODO: Consider including response body in returned error, if deemed helpful.
-			return err
+			return errors.NewErrorWithContext(ctx, fmt.Errorf("unmarshal data: %w", err), map[string]any{
+				"out.Data": gpstrings.CutLength(string(*out.Data), 500)})
 		}
 	}
 	if len(out.Errors) > 0 {
