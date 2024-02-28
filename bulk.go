@@ -133,7 +133,7 @@ func (s *BulkOperationServiceOp) ShouldGetBulkQueryResultURL(ctx context.Context
 func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(ctx context.Context, interval time.Duration) (*model.BulkOperation, error) {
 	q, err := s.GetCurrentBulkQuery(ctx)
 	if err != nil {
-		return q, fmt.Errorf("CurrentBulkOperation query: %w", err)
+		return q, fmt.Errorf("get current bulk query: %w", err)
 	}
 
 	for q.Status == model.BulkOperationStatusCreated || q.Status == model.BulkOperationStatusRunning || q.Status == model.BulkOperationStatusCanceling {
@@ -142,10 +142,11 @@ func (s *BulkOperationServiceOp) WaitForCurrentBulkQuery(ctx context.Context, in
 		span.Description = "interval"
 		time.Sleep(interval)
 		tracing.FinishSpan(span, ctx.Err())
+		ctx = span.Context()
 
 		q, err = s.GetCurrentBulkQuery(ctx)
 		if err != nil {
-			return q, fmt.Errorf("CurrentBulkOperation query: %w", err)
+			return q, fmt.Errorf("get current bulk query continously: %w", err)
 		}
 	}
 	log.Debugf("Bulk operation ready, latest status=%s", q.Status)
@@ -210,9 +211,9 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 	ctx = span.Context()
 	// end sentry tracing
 
-	_, err = s.WaitForCurrentBulkQuery(ctx, 1*time.Second)
+	_, err = s.WaitForCurrentBulkQuery(ctx, time.Second)
 	if err != nil {
-		return err
+		return fmt.Errorf("wait for current bulk query: %w", err)
 	}
 
 	id, err = s.PostBulkQuery(ctx, query)

@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/gempages/go-helper/errors"
@@ -17,6 +16,7 @@ import (
 	"github.com/getsentry/sentry-go"
 	"golang.org/x/net/context/ctxhttp"
 
+	pkghttp "github.com/gempages/go-shopify-graphql/http"
 	"github.com/gempages/go-shopify-graphql/utils"
 )
 
@@ -100,6 +100,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]inte
 	defer func() {
 		tracing.FinishSpan(span, err)
 	}()
+	ctx = span.Context()
 	// end sentry tracing
 
 	retries := c.retries
@@ -196,7 +197,7 @@ func (c *Client) shouldRetry(err error) bool {
 	if uerr, isURLErr := err.(*url.Error); isURLErr {
 		return uerr.Timeout() || uerr.Temporary()
 	}
-	return isThrottledError(err) || isConnectionError(err) || errors.Is(err, ErrMaxCostExceeded) ||
+	return isThrottledError(err) || pkghttp.IsConnectionError(err) || errors.Is(err, ErrMaxCostExceeded) ||
 		errors.Is(err, ErrGatewayTimeout) || errors.Is(err, ErrServiceUnavailable)
 }
 
@@ -233,8 +234,4 @@ const (
 
 func isThrottledError(err error) bool {
 	return err != nil && err.Error() == "Throttled"
-}
-
-func isConnectionError(err error) bool {
-	return err != nil && (strings.Contains(err.Error(), "connection reset by peer") || strings.Contains(err.Error(), "broken pipe"))
 }
