@@ -219,10 +219,12 @@ func (s *FileServiceOp) uploadFileToStage(
 func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*model.FileCreatePayload, error) {
 	out := mutationFileCreate{}
 
+	appendUUID := model.FileCreateInputDuplicateResolutionModeAppendUUID
 	vars := map[string]interface{}{
 		"files": []model.FileCreateInput{
 			{
-				OriginalSource: resourceURL,
+				OriginalSource:          resourceURL,
+				DuplicateResolutionMode: &appendUUID,
 			},
 		},
 	}
