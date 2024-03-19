@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/gempages/go-helper v1.7.1-0.20240202113827-b128d65300fa
-	github.com/gempages/go-shopify-graphql-model v0.0.0-20240308103005-28cf4cfba180
+	github.com/gempages/go-shopify-graphql-model v0.0.0-20240314040227-fa826b0030a4
 	github.com/getsentry/sentry-go v0.26.0
 	github.com/goccy/go-json v0.10.2
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29

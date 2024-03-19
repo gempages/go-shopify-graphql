@@ -146,8 +146,6 @@ var productQuery = fmt.Sprintf(`
 				title
 				inventoryPolicy
 				inventoryManagement
-				weightUnit
-				weight
 				position
 			}
 		}
@@ -269,8 +267,6 @@ var productBulkQuery = fmt.Sprintf(`
 				title
 				inventoryPolicy
 				inventoryManagement
-				weightUnit
-				weight
 				position
 			}
 		}
