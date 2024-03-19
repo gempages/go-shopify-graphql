@@ -145,7 +145,6 @@ var productQuery = fmt.Sprintf(`
 				barcode
 				title
 				inventoryPolicy
-				inventoryManagement
 				position
 			}
 		}
@@ -266,7 +265,6 @@ var productBulkQuery = fmt.Sprintf(`
 				barcode
 				title
 				inventoryPolicy
-				inventoryManagement
 				position
 			}
 		}
