@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
@@ -17,7 +18,7 @@ import (
 )
 
 type FileService interface {
-	Upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error)
+	Upload(ctx context.Context, input *UploadInput) (*model.File, error)
 	QueryFile(ctx context.Context, fileID string) (model.File, error)
 	QueryGenericFile(ctx context.Context, fileID string) (*model.GenericFile, error)
 	QueryMediaImage(ctx context.Context, fileID string) (*model.MediaImage, error)
@@ -122,27 +123,32 @@ func (s *FileServiceOp) QueryMediaImage(ctx context.Context, fileID string) (*mo
 	return file.(*model.MediaImage), nil
 }
 
-func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
+func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (*model.File, error) {
 	var (
 		fileCreatePayload *model.FileCreatePayload
 		err               error
 	)
 
 	if input.OriginalSource != nil {
-		// upload via url
+		// If original source is found, upload via url
 		fileCreatePayload, err = s.fileCreate(ctx, *input.OriginalSource)
 		if err != nil {
 			return nil, fmt.Errorf("s.fileCreate: %w", err)
 		}
 	} else {
-		// upload via file
+		// Upload via file
 		fileCreatePayload, err = s.upload(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("s.upload: %w", err)
 		}
 	}
 
-	return fileCreatePayload, nil
+	result, err := s.getUploadResult(ctx, fileCreatePayload.Files[0].GetID(), time.Second*2)
+	if err != nil {
+		return nil, fmt.Errorf("s.getUploadResult: %w", err)
+	}
+
+	return result, nil
 }
 
 func (s *FileServiceOp) upload(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
@@ -254,6 +260,41 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*mo
 	}
 
 	return &out.FileCreateResult, nil
+}
+
+// getUploadResult continues querying until a result found or an error occurs.
+func (s *FileServiceOp) getUploadResult(ctx context.Context, fileID string, interval time.Duration) (*model.File, error) {
+	for {
+		file, err := s.QueryFile(ctx, fileID)
+		if IsRateLimitError(err) {
+			time.Sleep(interval)
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("s.QueryFile: %w", err)
+		}
+
+		switch file.GetFileStatus() {
+		case model.FileStatusReady:
+			return &file, nil
+		case model.FileStatusFailed:
+			errData := map[string]any{
+				"fileID":     fileID,
+				"fileErrors": file.GetFileErrors(),
+			}
+			// Handle errors for images
+			if mediaImage, ok := file.(*model.MediaImage); ok {
+				errData = map[string]any{
+					"fileID":     fileID,
+					"fileErrors": mediaImage.MediaErrors,
+				}
+			}
+			return nil, errors.NewErrorWithContext(ctx, fmt.Errorf("upload file to shopify failed"), errData)
+		default:
+			time.Sleep(interval)
+			continue
+		}
+	}
 }
 
 func (s *FileServiceOp) queryFile(ctx context.Context, fileID string) (model.File, error) {
