@@ -1,11 +1,11 @@
 module github.com/gempages/go-shopify-graphql
 
-go 1.21
+go 1.21.4
 
 require (
-	github.com/gempages/go-helper v1.7.1-0.20240202113827-b128d65300fa
-	github.com/gempages/go-shopify-graphql-model v0.0.0-20240314040227-fa826b0030a4
-	github.com/getsentry/sentry-go v0.26.0
+	github.com/gempages/go-helper v1.9.2-0.20240419031546-317e16ad2656
+	github.com/gempages/go-shopify-graphql-model v0.0.0-20240419081320-1ad5df4603d3
+	github.com/getsentry/sentry-go v0.27.0
 	github.com/goccy/go-json v0.10.2
 	github.com/graph-gophers/graphql-go v0.0.0-20201113091052-beb923fada29
 	github.com/json-iterator/go v1.1.12
@@ -20,10 +20,10 @@ require (
 
 require (
 	github.com/elliotchance/pie/v2 v2.8.0 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/pprof v0.0.0-20230309165930-d61513b1440d // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -39,6 +39,6 @@ require (
 	golang.org/x/tools v0.19.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240125205218-1f4bbc51befe // indirect
 	google.golang.org/grpc v1.61.0 // indirect
-	google.golang.org/protobuf v1.32.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

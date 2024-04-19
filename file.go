@@ -278,16 +278,17 @@ func (s *FileServiceOp) getUploadResult(ctx context.Context, fileID string, inte
 		case model.FileStatusReady:
 			return file, nil
 		case model.FileStatusFailed:
-			errData := map[string]any{
-				"fileID":     fileID,
-				"fileErrors": file.GetFileErrors(),
+			fileErrors := file.GetFileErrors()
+			if len(fileErrors) > 0 {
+				return nil, &fileErrors[0]
 			}
 			// Handle errors for images
-			if mediaImage, ok := file.(*model.MediaImage); ok {
-				errData = map[string]any{
-					"fileID":     fileID,
-					"fileErrors": mediaImage.MediaErrors,
-				}
+			if mediaImage, ok := file.(*model.MediaImage); ok && len(mediaImage.MediaErrors) > 0 {
+				return nil, &mediaImage.MediaErrors[0]
+			}
+			// Unknown error
+			errData := map[string]any{
+				"fileID": fileID,
 			}
 			return nil, errors.NewErrorWithContext(ctx, fmt.Errorf("upload file to shopify failed"), errData)
 		default:
