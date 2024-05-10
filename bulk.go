@@ -3,6 +3,7 @@ package shopify
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -19,7 +20,6 @@ import (
 	"github.com/gempages/go-shopify-graphql/rand"
 	"github.com/gempages/go-shopify-graphql/utils"
 	"github.com/getsentry/sentry-go"
-	"github.com/goccy/go-json"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/guregu/null.v4"
