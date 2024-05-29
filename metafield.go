@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	"github.com/gempages/go-shopify-graphql/graphql"
-
 	log "github.com/sirupsen/logrus"
+
+	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type MetafieldService interface {
@@ -19,6 +19,7 @@ type MetafieldService interface {
 
 	Delete(ctx context.Context, metafield MetafieldDeleteInput) error
 	DeleteBulk(ctx context.Context, metafield []MetafieldDeleteInput) error
+	CreateBulk(ctx context.Context, inputs []*model.MetafieldsSetInput) ([]*model.Metafield, error)
 }
 
 type MetafieldServiceOp struct {
@@ -61,6 +62,29 @@ type metafieldDeleteResult struct {
 	DeletedID  string       `json:"deletedId,omitempty"`
 	UserErrors []UserErrors `json:"userErrors"`
 }
+
+type mutationMetafieldCreateBulk struct {
+	MetafieldCreateBulkPayload model.MetafieldsSetPayload `json:"metafieldCreateBulkPayload"`
+}
+
+var metafieldsSet = `
+mutation MetafieldsSet($metafields: [MetafieldsSetInput!]!) {
+  metafieldsSet(metafields: $metafields) {
+    metafields {
+      key
+      namespace
+      value
+      createdAt
+      updatedAt
+    }
+    userErrors {
+      field
+      message
+      code
+    }
+  }
+}
+`
 
 func (s *MetafieldServiceOp) ListAllShopMetafields(ctx context.Context) ([]*Metafield, error) {
 	q := `
@@ -175,4 +199,21 @@ func (s *MetafieldServiceOp) Delete(ctx context.Context, metafield MetafieldDele
 	}
 
 	return nil
+}
+
+func (s *DiscountServiceOp) CreateBulk(ctx context.Context, inputs []model.MetafieldsSetInput) ([]model.Metafield, error) {
+	out := mutationMetafieldCreateBulk{}
+	vars := map[string]interface{}{
+		"metafields": inputs,
+	}
+
+	if err := s.client.gql.MutateString(ctx, metafieldsSet, vars, &out); err != nil {
+		return nil, fmt.Errorf("gql.MutateString: %w", err)
+	}
+
+	if len(out.MetafieldCreateBulkPayload.UserErrors) >= 1 {
+		return nil, fmt.Errorf("%+v", out.MetafieldCreateBulkPayload.UserErrors)
+	}
+
+	return out.MetafieldCreateBulkPayload.Metafields, nil
 }
