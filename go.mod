@@ -20,9 +20,6 @@ require (
 )
 
 require (
-	github.com/99designs/gqlgen v0.17.47 // indirect
-	github.com/agnivade/levenshtein v1.1.1 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/elliotchance/pie/v2 v2.8.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
@@ -34,15 +31,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
-	github.com/sosodev/duration v1.3.1 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
-	github.com/urfave/cli/v2 v2.27.2 // indirect
-	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
-	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.15.0 // indirect
 	golang.org/x/tools v0.21.0 // indirect

@@ -6,8 +6,9 @@ import (
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	"github.com/gempages/go-shopify-graphql/graphql"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type CollectionService interface {
@@ -63,7 +64,6 @@ var collectionSingleQuery = `
   description
   descriptionHtml
   templateSuffix
-  productsCount
   seo {
     description
     title
@@ -86,7 +86,6 @@ var collectionSingleQueryWithCursor = `
   description
   descriptionHtml
   templateSuffix
-  productsCount
   seo {
     description
     title
@@ -104,28 +103,6 @@ var collectionSingleQueryWithCursor = `
   }
 `
 
-var collectionBulkQuery = `
-	id
-	handle
-	title
-	updatedAt
-	description
-	descriptionHtml
-	templateSuffix
-	productsCount
-	seo{
-		description
-		title
-	}
-	image {
-		altText
-		height
-		id
-		src
-		width
-	}
-`
-
 var collectionWithProductsBulkQuery = `
 	id
 	handle
@@ -134,7 +111,6 @@ var collectionWithProductsBulkQuery = `
 	description
 	descriptionHtml
 	templateSuffix
-	productsCount
 	seo{
 		description
 		title
