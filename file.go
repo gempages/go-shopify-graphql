@@ -7,14 +7,17 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/gempages/go-helper/errors"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	"github.com/gempages/go-shopify-graphql/graphql"
 	"github.com/spf13/cast"
+
+	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type FileService interface {
@@ -131,7 +134,7 @@ func (s *FileServiceOp) Upload(ctx context.Context, input *UploadInput) (model.F
 
 	if input.OriginalSource != nil {
 		// If original source is found, upload via url
-		fileCreatePayload, err = s.fileCreate(ctx, *input.OriginalSource)
+		fileCreatePayload, err = s.fileCreate(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("s.fileCreate: %w", err)
 		}
@@ -163,7 +166,8 @@ func (s *FileServiceOp) upload(ctx context.Context, input *UploadInput) (*model.
 		return nil, fmt.Errorf("s.uploadFileToStage: %w", err)
 	}
 
-	result, err := s.fileCreate(ctx, *stageCreated.ResourceURL)
+	input.OriginalSource = stageCreated.ResourceURL
+	result, err := s.fileCreate(ctx, input)
 	if err != nil {
 		return nil, fmt.Errorf("s.fileCreate: %w", err)
 	}
@@ -222,13 +226,23 @@ func (s *FileServiceOp) uploadFileToStage(
 	return nil
 }
 
-func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*model.FileCreatePayload, error) {
+func (s *FileServiceOp) fileCreate(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
 	out := mutationFileCreate{}
+
+	replaceMode := model.FileCreateInputDuplicateResolutionModeReplace
+	fileType := fileCreateContentType(input.Mimetype)
+	newFilename, err := updateFilenameExtension(input.Filename, *input.OriginalSource)
+	if err != nil {
+		return nil, fmt.Errorf("updateFilenameExtension: %w", err)
+	}
 
 	vars := map[string]interface{}{
 		"files": []model.FileCreateInput{
 			{
-				OriginalSource: resourceURL,
+				Filename:                &newFilename,
+				ContentType:             &fileType,
+				OriginalSource:          *input.OriginalSource,
+				DuplicateResolutionMode: &replaceMode,
 			},
 		},
 	}
@@ -250,7 +264,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, resourceURL string) (*mo
 	}
 	`
 
-	err := s.client.gql.MutateString(ctx, m, vars, &out)
+	err = s.client.gql.MutateString(ctx, m, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -405,4 +419,35 @@ func fileTargetResource(mimetype string) model.StagedUploadTargetGenerateUploadR
 	}
 
 	return model.StagedUploadTargetGenerateUploadResourceFile
+}
+
+func fileCreateContentType(mimetype string) model.FileContentType {
+	if strings.Contains(mimetype, "image") {
+		return model.FileContentTypeImage
+	}
+
+	return model.FileContentTypeFile
+}
+
+// getExtensionFromURL retrieves the file extension from a URL.
+func getExtensionFromURL(u string) (string, error) {
+	parsedURL, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Ext(parsedURL.Path), nil
+}
+
+// replaceExtension replaces the extension of a filename with a new extension.
+func replaceExtension(filename, newExt string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename)) + newExt
+}
+
+// updateFilenameExtension updates the extension of a filename to match the extension of a source URL.
+func updateFilenameExtension(filename, sourceURL string) (string, error) {
+	newExt, err := getExtensionFromURL(sourceURL)
+	if err != nil {
+		return "", err
+	}
+	return replaceExtension(filename, newExt), nil
 }
