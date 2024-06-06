@@ -7,7 +7,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -231,11 +230,8 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, input *UploadInput) (*mo
 
 	replaceMode := model.FileCreateInputDuplicateResolutionModeReplace
 	fileType := fileCreateContentType(input.Mimetype)
-	newFilename, err := updateFilenameExtension(input.Filename, *input.OriginalSource)
-	if err != nil {
-		return nil, fmt.Errorf("updateFilenameExtension: %w", err)
-	}
 
+	newFilename := replaceExtension(input.Filename, filepath.Ext(*input.OriginalSource))
 	vars := map[string]interface{}{
 		"files": []model.FileCreateInput{
 			{
@@ -264,7 +260,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, input *UploadInput) (*mo
 	}
 	`
 
-	err = s.client.gql.MutateString(ctx, m, vars, &out)
+	err := s.client.gql.MutateString(ctx, m, vars, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -429,25 +425,7 @@ func fileCreateContentType(mimetype string) model.FileContentType {
 	return model.FileContentTypeFile
 }
 
-// getExtensionFromURL retrieves the file extension from a URL.
-func getExtensionFromURL(u string) (string, error) {
-	parsedURL, err := url.Parse(u)
-	if err != nil {
-		return "", err
-	}
-	return filepath.Ext(parsedURL.Path), nil
-}
-
 // replaceExtension replaces the extension of a filename with a new extension.
 func replaceExtension(filename, newExt string) string {
 	return strings.TrimSuffix(filename, filepath.Ext(filename)) + newExt
-}
-
-// updateFilenameExtension updates the extension of a filename to match the extension of a source URL.
-func updateFilenameExtension(filename, sourceURL string) (string, error) {
-	newExt, err := getExtensionFromURL(sourceURL)
-	if err != nil {
-		return "", err
-	}
-	return replaceExtension(filename, newExt), nil
 }
