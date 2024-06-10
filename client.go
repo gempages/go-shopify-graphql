@@ -31,6 +31,7 @@ type Client struct {
 	Webhook       WebhookService
 	File          FileService
 	App           AppService
+	Discount      DiscountService
 }
 
 type ListOptions struct {
@@ -74,6 +75,7 @@ func NewClient(apiKey string, password string, storeName string) *Client {
 	c.Webhook = &WebhookServiceOp{client: c}
 	c.File = &FileServiceOp{client: c}
 	c.App = &AppServiceOp{client: c}
+	c.Discount = &DiscountServiceOp{client: c}
 
 	return c
 }
@@ -112,6 +114,7 @@ func NewClientWithOpts(storeName string, opts ...graphqlclient.Option) *Client {
 	c.Webhook = &WebhookServiceOp{client: c}
 	c.File = &FileServiceOp{client: c}
 	c.App = &AppServiceOp{client: c}
+	c.Discount = &DiscountServiceOp{client: c}
 
 	return c
 }
@@ -134,6 +137,7 @@ func NewClientWithToken(apiKey string, storeName string) *Client {
 	c.Metafield = &MetafieldServiceOp{client: c}
 	c.BulkOperation = &BulkOperationServiceOp{client: c}
 	c.Webhook = &WebhookServiceOp{client: c}
+	c.Discount = &DiscountServiceOp{client: c}
 
 	return c
 }
