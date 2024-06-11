@@ -82,13 +82,8 @@ mutation discountAutomaticAppUpdate($automaticAppDiscount: DiscountAutomaticAppI
 
 func (s *DiscountServiceOp) AutomaticAppCreate(ctx context.Context, input model.DiscountAutomaticAppInput) (output *model.DiscountAutomaticApp, err error) {
 	out := mutationDiscountAutomaticAppCreate{}
-	vars := map[string]interface{}{
-		"title":        input.Title,
-		"functionId":   input.FunctionID,
-		"startsAt":     input.StartsAt,
-		"endsAt":       input.EndsAt,
-		"combinesWith": input.CombinesWith,
-		"metafields":   input.Metafields,
+	vars := map[string]any{
+		"automaticAppDiscount": input,
 	}
 
 	if err := s.client.gql.MutateString(ctx, discountAutomaticAppCreate, vars, &out); err != nil {
@@ -104,7 +99,7 @@ func (s *DiscountServiceOp) AutomaticAppCreate(ctx context.Context, input model.
 
 func (s *DiscountServiceOp) AutomaticAppUpdate(ctx context.Context, discountBaseID string, input model.DiscountAutomaticAppInput) (output *model.DiscountAutomaticApp, err error) {
 	out := mutationDiscountAutomaticAppUpdate{}
-	vars := map[string]interface{}{
+	vars := map[string]any{
 		"id":                   discountBaseID,
 		"automaticAppDiscount": input,
 	}
