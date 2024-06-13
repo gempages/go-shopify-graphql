@@ -2,10 +2,30 @@ package shopify
 
 import (
 	"errors"
+	"fmt"
 	"strings"
+
+	"github.com/gempages/go-shopify-graphql-model/graph/model"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
+
+type DiscountError struct {
+	Code    model.DiscountErrorCode `json:"code"`
+	Message string                  `json:"message"`
+}
+
+func (m *DiscountError) Error() string {
+	return m.Message
+}
+
+func NewDiscountError(code model.DiscountErrorCode, message string) error {
+	return &DiscountError{Code: code, Message: message}
+}
+
+func NewDiscountErrorf(code model.DiscountErrorCode, format string, args ...any) error {
+	return &DiscountError{Code: code, Message: fmt.Sprintf(format, args...)}
+}
 
 func IsInvalidTokenError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "Invalid API key or access token")
@@ -38,6 +58,15 @@ func IsRateLimitError(err error) bool {
 
 func IsNotExistError(err error) bool {
 	return err != nil && strings.Contains(err.Error(), graphql.ErrNotExisted.Error())
+}
+
+// IsValidationDiscountError checks if the error indicates that the active period in discount overlaps with another price rule.
+func IsValidationDiscountError(err error) bool {
+	var discountErr *DiscountError
+	if errors.As(err, &discountErr) {
+		return discountErr.Code == model.DiscountErrorCodeInvalid || discountErr.Code == model.DiscountErrorCodeMaxAppDiscounts
+	}
+	return false
 }
 
 func IsFileNotExistError(err error) bool {
