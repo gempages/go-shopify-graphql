@@ -228,8 +228,11 @@ func (s *FileServiceOp) uploadFileToStage(
 func (s *FileServiceOp) fileCreate(ctx context.Context, input *UploadInput) (*model.FileCreatePayload, error) {
 	out := mutationFileCreate{}
 
-	replaceMode := model.FileCreateInputDuplicateResolutionModeReplace
+	duplicateResolutionMode := model.FileCreateInputDuplicateResolutionModeReplace
 	fileType := fileCreateContentType(input.Mimetype)
+	if fileType != model.FileContentTypeImage {
+		duplicateResolutionMode = model.FileCreateInputDuplicateResolutionModeAppendUUID
+	}
 
 	newFilename := replaceExtension(input.Filename, filepath.Ext(*input.OriginalSource))
 	vars := map[string]interface{}{
@@ -238,7 +241,7 @@ func (s *FileServiceOp) fileCreate(ctx context.Context, input *UploadInput) (*mo
 				Filename:                &newFilename,
 				ContentType:             &fileType,
 				OriginalSource:          *input.OriginalSource,
-				DuplicateResolutionMode: &replaceMode,
+				DuplicateResolutionMode: &duplicateResolutionMode,
 			},
 		},
 	}
