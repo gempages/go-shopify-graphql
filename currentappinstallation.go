@@ -20,6 +20,7 @@ const queryCurrentAppInstallation = `
 	query {
 		currentAppInstallation {
 			app {
+				id
 				title
 				embedded
 				isPostPurchaseAppInUse
