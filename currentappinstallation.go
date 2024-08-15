@@ -7,7 +7,7 @@ import (
 )
 
 type AppService interface {
-	GetCurrentAppInstallation(ctx context.Context) (*model.App, error)
+	GetCurrentAppInstallation(ctx context.Context) (*model.AppInstallation, error)
 }
 
 type AppServiceOp struct {
@@ -19,6 +19,7 @@ var _ AppService = &AppServiceOp{}
 const queryCurrentAppInstallation = `
 	query {
 		currentAppInstallation {
+			id
 			app {
 				id
 				title
@@ -30,11 +31,9 @@ const queryCurrentAppInstallation = `
 	}
 `
 
-func (a *AppServiceOp) GetCurrentAppInstallation(ctx context.Context) (*model.App, error) {
+func (a *AppServiceOp) GetCurrentAppInstallation(ctx context.Context) (*model.AppInstallation, error) {
 	out := struct {
-		CurrentAppInstallation struct {
-			App *model.App `json:"app"`
-		} `json:"currentAppInstallation"`
+		CurrentAppInstallation *model.AppInstallation `json:"currentAppInstallation"`
 	}{}
 
 	err := a.client.gql.QueryString(ctx, queryCurrentAppInstallation, nil, &out)
@@ -42,5 +41,5 @@ func (a *AppServiceOp) GetCurrentAppInstallation(ctx context.Context) (*model.Ap
 		return nil, err
 	}
 
-	return out.CurrentAppInstallation.App, nil
+	return out.CurrentAppInstallation, nil
 }
