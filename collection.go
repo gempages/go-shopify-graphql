@@ -241,7 +241,7 @@ func (s *CollectionServiceOp) getPage(ctx context.Context, id graphql.ID, cursor
 	}
 
 	if out.Collection == nil {
-		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "collection not found", nil)
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "collection not found")
 	}
 
 	return out.Collection, nil
@@ -281,7 +281,7 @@ func (s *CollectionServiceOp) GetSingleCollection(ctx context.Context, id string
 	}
 
 	if out.Collection == nil {
-		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "collection not found", nil)
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "collection not found")
 	}
 
 	return out.Collection, nil

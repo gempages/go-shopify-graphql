@@ -381,7 +381,7 @@ func (s *ProductServiceOp) getPage(ctx context.Context, id string, variantAfter 
 	}
 
 	if out.Product == nil {
-		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found")
 	}
 
 	return out.Product, nil
@@ -409,7 +409,7 @@ func (s *ProductServiceOp) GetWithFields(ctx context.Context, id string, fields 
 	}
 
 	if out.Product == nil {
-		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found")
 	}
 
 	return out.Product, nil
@@ -449,7 +449,7 @@ func (s *ProductServiceOp) GetSingleProductCollection(ctx context.Context, id st
 	}
 
 	if out.Product == nil {
-		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found", nil)
+		return nil, errors.NewNotExistsError(errors.ErrorResourceNotFound, "product not found")
 	}
 
 	return out.Product, nil
