@@ -53,6 +53,10 @@ const productBaseQuery = `
 		name
 		position
 		values
+		optionValues {
+			id
+			name
+		}
 	}
 	tags
 	title
