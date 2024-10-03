@@ -1,4 +1,4 @@
-package product_test
+package discount_test
 
 import (
 	"context"

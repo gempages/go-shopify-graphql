@@ -1,4 +1,4 @@
-package discount_test
+package billing_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestDiscount(t *testing.T) {
+func TestBilling(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "DiscountService Suite")
+	RunSpecs(t, "BillingService Suite")
 }
