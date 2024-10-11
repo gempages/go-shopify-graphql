@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
+
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
