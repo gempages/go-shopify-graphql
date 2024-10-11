@@ -17,21 +17,22 @@ const (
 type Client struct {
 	gql *graphql.Client
 
-	Product       ProductService
-	Variant       VariantService
-	Inventory     InventoryService
-	Collection    CollectionService
-	Cart          CartService
-	Billing       BillingService
-	Order         OrderService
-	Fulfillment   FulfillmentService
-	Location      LocationService
-	Metafield     MetafieldService
-	BulkOperation BulkOperationService
-	Webhook       WebhookService
-	File          FileService
-	App           AppService
-	Discount      DiscountService
+	Product             ProductService
+	Variant             VariantService
+	Inventory           InventoryService
+	Collection          CollectionService
+	Cart                CartService
+	Billing             BillingService
+	Order               OrderService
+	Fulfillment         FulfillmentService
+	Location            LocationService
+	Metafield           MetafieldService
+	MetafieldDefinition MetafieldDefinitionService
+	BulkOperation       BulkOperationService
+	Webhook             WebhookService
+	File                FileService
+	App                 AppService
+	Discount            DiscountService
 }
 
 type ListOptions struct {
@@ -71,6 +72,7 @@ func NewClient(apiKey string, password string, storeName string) *Client {
 	c.Fulfillment = &FulfillmentServiceOp{client: c}
 	c.Location = &LocationServiceOp{client: c}
 	c.Metafield = &MetafieldServiceOp{client: c}
+	c.MetafieldDefinition = &MetafieldDefinitionServiceOp{client: c}
 	c.BulkOperation = &BulkOperationServiceOp{client: c}
 	c.Webhook = &WebhookServiceOp{client: c}
 	c.File = &FileServiceOp{client: c}
@@ -110,6 +112,7 @@ func NewClientWithOpts(storeName string, opts ...graphqlclient.Option) *Client {
 	c.Fulfillment = &FulfillmentServiceOp{client: c}
 	c.Location = &LocationServiceOp{client: c}
 	c.Metafield = &MetafieldServiceOp{client: c}
+	c.MetafieldDefinition = &MetafieldDefinitionServiceOp{client: c}
 	c.BulkOperation = &BulkOperationServiceOp{client: c}
 	c.Webhook = &WebhookServiceOp{client: c}
 	c.File = &FileServiceOp{client: c}
@@ -135,6 +138,7 @@ func NewClientWithToken(apiKey string, storeName string) *Client {
 	// c.Fulfillment = &FulfillmentServiceOp{client: c}
 	// c.Location = &LocationServiceOp{client: c}
 	c.Metafield = &MetafieldServiceOp{client: c}
+	c.MetafieldDefinition = &MetafieldDefinitionServiceOp{client: c}
 	c.BulkOperation = &BulkOperationServiceOp{client: c}
 	c.Webhook = &WebhookServiceOp{client: c}
 	c.Discount = &DiscountServiceOp{client: c}
