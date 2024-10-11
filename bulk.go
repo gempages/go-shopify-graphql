@@ -16,13 +16,14 @@ import (
 
 	"github.com/gempages/go-helper/tracing"
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-	"github.com/gempages/go-shopify-graphql/graphql"
-	"github.com/gempages/go-shopify-graphql/rand"
-	"github.com/gempages/go-shopify-graphql/utils"
 	"github.com/getsentry/sentry-go"
 	jsoniter "github.com/json-iterator/go"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/guregu/null.v4"
+
+	"github.com/gempages/go-shopify-graphql/graphql"
+	"github.com/gempages/go-shopify-graphql/rand"
+	"github.com/gempages/go-shopify-graphql/utils"
 )
 
 const (
@@ -270,6 +271,8 @@ type bulkQueryBuilder struct {
 	operationName string
 	fields        string
 	query         *string
+	first         int
+	after         string
 }
 
 func (b *bulkQueryBuilder) SetFields(fields string) {
@@ -278,6 +281,14 @@ func (b *bulkQueryBuilder) SetFields(fields string) {
 
 func (b *bulkQueryBuilder) SetQuery(query string) {
 	b.query = &query
+}
+
+func (b *bulkQueryBuilder) SetFirst(first int) {
+	b.first = first
+}
+
+func (b *bulkQueryBuilder) SetAfter(after string) {
+	b.after = after
 }
 
 func (b *bulkQueryBuilder) Build() string {

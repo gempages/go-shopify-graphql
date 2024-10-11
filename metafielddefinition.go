@@ -5,19 +5,58 @@ import (
 	"fmt"
 
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
-
-	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
 type MetafieldDefinitionService interface {
-	List(ctx context.Context, ownerType model.MetafieldOwnerType, opts ListOptions) (*model.MetafieldDefinitionConnection, error)
+	List(ctx context.Context, ownerType model.MetafieldOwnerType, opts ...QueryOption) (*model.MetafieldDefinitionConnection, error)
 }
 
 type MetafieldDefinitionServiceOp struct {
 	client *Client
 }
 
-func (s *MetafieldDefinitionServiceOp) List(ctx context.Context, ownerType model.MetafieldOwnerType, opts ListOptions) (*model.MetafieldDefinitionConnection, error) {
+type metafieldDifinitionQueryOptionBuilder struct {
+	ownerType model.MetafieldOwnerType
+	fields    string
+	query     *string
+	first     int
+	after     string
+}
+
+func (m *metafieldDifinitionQueryOptionBuilder) SetFields(fields string) {
+	m.fields = fields
+}
+
+func (m *metafieldDifinitionQueryOptionBuilder) SetQuery(query string) {
+	m.query = &query
+}
+
+func (m *metafieldDifinitionQueryOptionBuilder) SetFirst(first int) {
+	m.first = first
+}
+
+func (m *metafieldDifinitionQueryOptionBuilder) SetAfter(after string) {
+	m.after = after
+}
+
+func (m *metafieldDifinitionQueryOptionBuilder) Build() map[string]interface{} {
+	vars := map[string]interface{}{
+		"ownerType": m.ownerType,
+		"first":     m.first,
+	}
+
+	if m.first == 0 {
+		vars["first"] = 250
+	}
+
+	if m.after != "" {
+		vars["after"] = m.after
+	}
+
+	return vars
+}
+
+func (s *MetafieldDefinitionServiceOp) List(ctx context.Context, ownerType model.MetafieldOwnerType, opts ...QueryOption) (*model.MetafieldDefinitionConnection, error) {
 	q := `
 		query metafieldDefinitions($first: Int, $after: String, $ownerType: MetafieldOwnerType!) {
 			metafieldDefinitions(first: $first, after: $after, ownerType: $ownerType) {
@@ -43,16 +82,16 @@ func (s *MetafieldDefinitionServiceOp) List(ctx context.Context, ownerType model
 			}
 		}
 `
-	if opts.First == 0 {
-		opts.First = 250
-	}
 
 	out := model.QueryRoot{}
-	vars := map[string]interface{}{
-		"first":     graphql.Int(opts.First),
-		"ownerType": graphql.String(ownerType),
+	queryOpt := metafieldDifinitionQueryOptionBuilder{
+		ownerType: ownerType,
+	}
+	for _, opt := range opts {
+		opt(&queryOpt)
 	}
 
+	vars := queryOpt.Build()
 	err := s.client.gql.QueryString(ctx, q, vars, &out)
 	if err != nil {
 		return nil, fmt.Errorf("gql.QueryString: %w", err)
