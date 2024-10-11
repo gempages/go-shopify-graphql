@@ -58,6 +58,5 @@ func (s *MetafieldDefinitionServiceOp) List(ctx context.Context, ownerType model
 		return nil, fmt.Errorf("gql.QueryString: %w", err)
 	}
 
-	metaDefinition := out.MetafieldDefinitions
-	return metaDefinition, nil
+	return out.MetafieldDefinitions, nil
 }
