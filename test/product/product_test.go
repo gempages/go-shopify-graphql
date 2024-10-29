@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	"github.com/gempages/go-helper/errors"
-	"github.com/gempages/go-shopify-graphql"
-	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/gempages/go-shopify-graphql"
+	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 )
 
 const (
@@ -34,6 +35,7 @@ var _ = Describe("ProductService", func() {
 		token = os.Getenv("SHOPIFY_API_TOKEN")
 		opts := []shopifyGraph.Option{
 			shopifyGraph.WithToken(token),
+			shopifyGraph.WithVersion("2024-10"),
 		}
 		shopifyClient = shopify.NewClientWithOpts(domain, opts...)
 	})
@@ -102,7 +104,10 @@ var _ = Describe("ProductService", func() {
 		It("returns only requested fields", func() {
 			fields := `id title handle`
 			firstLimit := 1
-			results, err := shopifyClient.Product.ListWithFields(ctx, "", fields, firstLimit, "")
+			results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductRequest{
+				Fields: fields,
+				First:  firstLimit,
+			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeNil())
 			for _, e := range results.Edges {
@@ -120,7 +125,10 @@ var _ = Describe("ProductService", func() {
 			It("returns 5 products", func() {
 				fields := `id`
 				firstLimit := 5
-				results, err := shopifyClient.Product.ListWithFields(ctx, "", fields, firstLimit, "")
+				results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductRequest{
+					Fields: fields,
+					First:  firstLimit,
+				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeNil())
 				Expect(len(results.Edges)).To(Equal(firstLimit))
@@ -131,7 +139,10 @@ var _ = Describe("ProductService", func() {
 			It("can returns media", func() {
 				fields := fmt.Sprintf("id %s", mediaQuery)
 				firstLimit := 5
-				results, err := shopifyClient.Product.ListWithFields(ctx, "", fields, firstLimit, "")
+				results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductRequest{
+					Fields: fields,
+					First:  firstLimit,
+				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeNil())
 				Expect(len(results.Edges)).To(Equal(firstLimit))

@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	"github.com/gempages/go-helper/errors"
-	"github.com/gempages/go-shopify-graphql"
-	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/gempages/go-shopify-graphql"
+	shopifyGraph "github.com/gempages/go-shopify-graphql/graph"
 )
 
 const (
@@ -77,7 +78,10 @@ var _ = Describe("CollectionService", func() {
 		It("returns only requested fields", func() {
 			fields := `id title handle`
 			firstLimit := 1
-			results, err := shopifyClient.Collection.ListWithFields(ctx, firstLimit, "", "", fields)
+			results, err := shopifyClient.Collection.ListWithFields(ctx, &shopify.ListCollectionRequest{
+				Fields: fields,
+				First:  firstLimit,
+			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(results).NotTo(BeNil())
 			for _, e := range results.Edges {
@@ -94,7 +98,10 @@ var _ = Describe("CollectionService", func() {
 			It("returns 2 collections", func() {
 				fields := `id`
 				firstLimit := 2
-				results, err := shopifyClient.Collection.ListWithFields(ctx, firstLimit, "", "", fields)
+				results, err := shopifyClient.Collection.ListWithFields(ctx, &shopify.ListCollectionRequest{
+					Fields: fields,
+					First:  firstLimit,
+				})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(results).NotTo(BeNil())
 				Expect(len(results.Edges)).To(Equal(firstLimit))
