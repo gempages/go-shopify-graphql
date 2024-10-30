@@ -35,7 +35,6 @@ var _ = Describe("ProductService", func() {
 		token = os.Getenv("SHOPIFY_API_TOKEN")
 		opts := []shopifyGraph.Option{
 			shopifyGraph.WithToken(token),
-			shopifyGraph.WithVersion("2024-10"),
 		}
 		shopifyClient = shopify.NewClientWithOpts(domain, opts...)
 	})
@@ -104,7 +103,7 @@ var _ = Describe("ProductService", func() {
 		It("returns only requested fields", func() {
 			fields := `id title handle`
 			firstLimit := 1
-			results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductRequest{
+			results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductArgs{
 				Fields: fields,
 				First:  firstLimit,
 			})
@@ -125,7 +124,7 @@ var _ = Describe("ProductService", func() {
 			It("returns 5 products", func() {
 				fields := `id`
 				firstLimit := 5
-				results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductRequest{
+				results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductArgs{
 					Fields: fields,
 					First:  firstLimit,
 				})
@@ -139,7 +138,7 @@ var _ = Describe("ProductService", func() {
 			It("can returns media", func() {
 				fields := fmt.Sprintf("id %s", mediaQuery)
 				firstLimit := 5
-				results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductRequest{
+				results, err := shopifyClient.Product.ListWithFields(ctx, &shopify.ListProductArgs{
 					Fields: fields,
 					First:  firstLimit,
 				})

@@ -78,7 +78,7 @@ var _ = Describe("CollectionService", func() {
 		It("returns only requested fields", func() {
 			fields := `id title handle`
 			firstLimit := 1
-			results, err := shopifyClient.Collection.ListWithFields(ctx, &shopify.ListCollectionRequest{
+			results, err := shopifyClient.Collection.ListWithFields(ctx, &shopify.ListCollectionArgs{
 				Fields: fields,
 				First:  firstLimit,
 			})
@@ -98,7 +98,7 @@ var _ = Describe("CollectionService", func() {
 			It("returns 2 collections", func() {
 				fields := `id`
 				firstLimit := 2
-				results, err := shopifyClient.Collection.ListWithFields(ctx, &shopify.ListCollectionRequest{
+				results, err := shopifyClient.Collection.ListWithFields(ctx, &shopify.ListCollectionArgs{
 					Fields: fields,
 					First:  firstLimit,
 				})

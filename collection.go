@@ -11,7 +11,7 @@ import (
 	"github.com/gempages/go-shopify-graphql/graphql"
 )
 
-type ListCollectionRequest struct {
+type ListCollectionArgs struct {
 	Fields  string
 	Query   string
 	First   int
@@ -22,7 +22,7 @@ type ListCollectionRequest struct {
 
 type CollectionService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Collection, error)
-	ListWithFields(ctx context.Context, req *ListCollectionRequest) (*model.CollectionConnection, error)
+	ListWithFields(ctx context.Context, req *ListCollectionArgs) (*model.CollectionConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Collection, error)
 	GetSingleCollection(ctx context.Context, id string, cursor string) (*model.Collection, error)
@@ -160,9 +160,9 @@ func (s *CollectionServiceOp) List(ctx context.Context, opts ...QueryOption) ([]
 	return res, nil
 }
 
-func (s *CollectionServiceOp) ListWithFields(ctx context.Context, req *ListCollectionRequest) (*model.CollectionConnection, error) {
+func (s *CollectionServiceOp) ListWithFields(ctx context.Context, req *ListCollectionArgs) (*model.CollectionConnection, error) {
 	if req == nil {
-		req = &ListCollectionRequest{}
+		req = &ListCollectionArgs{}
 	}
 
 	if req.Fields == "" {

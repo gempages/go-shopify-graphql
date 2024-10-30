@@ -8,7 +8,7 @@ import (
 	"github.com/gempages/go-shopify-graphql-model/graph/model"
 )
 
-type ListProductRequest struct {
+type ListProductArgs struct {
 	Fields  string
 	Query   string
 	First   int
@@ -19,7 +19,7 @@ type ListProductRequest struct {
 
 type ProductService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error)
-	ListWithFields(ctx context.Context, req *ListProductRequest) (*model.ProductConnection, error)
+	ListWithFields(ctx context.Context, req *ListProductArgs) (*model.ProductConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Product, error)
 	GetWithFields(ctx context.Context, id string, fields string) (*model.Product, error)
@@ -310,9 +310,9 @@ func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*mo
 	return res, nil
 }
 
-func (s *ProductServiceOp) ListWithFields(ctx context.Context, req *ListProductRequest) (*model.ProductConnection, error) {
+func (s *ProductServiceOp) ListWithFields(ctx context.Context, req *ListProductArgs) (*model.ProductConnection, error) {
 	if req == nil {
-		req = &ListProductRequest{}
+		req = &ListProductArgs{}
 	}
 
 	if req.Fields == "" {
