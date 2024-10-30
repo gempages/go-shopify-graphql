@@ -19,6 +19,7 @@ type ListProductArgs struct {
 
 type ProductService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error)
+	ListVariants(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error)
 	ListWithFields(ctx context.Context, args *ListProductArgs) (*model.ProductConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Product, error)
@@ -291,6 +292,23 @@ var productBulkQuery = fmt.Sprintf(`
 	}
 `, productBaseQuery)
 
+var productVariantQuery = `
+	id
+	metafields {
+		edges {
+		  node {
+				id
+				legacyResourceId
+				namespace
+				key
+				value
+				type
+				ownerType
+		  }
+		}
+	}
+`
+
 func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error) {
 	b := &bulkQueryBuilder{
 		operationName: "products",
@@ -537,4 +555,24 @@ func (s *ProductServiceOp) Delete(ctx context.Context, product model.ProductDele
 	}
 
 	return m.ProductDeleteResult.DeletedProductID, nil
+}
+
+func (s *ProductServiceOp) ListVariants(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error) {
+	b := &bulkQueryBuilder{
+		operationName: "productVariants",
+		fields:        productVariantQuery,
+	}
+	for _, opt := range opts {
+		opt(b)
+	}
+	q := b.Build()
+
+	res := make([]*model.ProductVariant, 0)
+	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
+	if err != nil {
+		return nil, fmt.Errorf("bulk query: %w", err)
+	}
+
+	return res, nil
+
 }
