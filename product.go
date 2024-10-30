@@ -19,7 +19,7 @@ type ListProductArgs struct {
 
 type ProductService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error)
-	ListWithFields(ctx context.Context, req *ListProductArgs) (*model.ProductConnection, error)
+	ListWithFields(ctx context.Context, args *ListProductArgs) (*model.ProductConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Product, error)
 	GetWithFields(ctx context.Context, id string, fields string) (*model.Product, error)
@@ -310,17 +310,17 @@ func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*mo
 	return res, nil
 }
 
-func (s *ProductServiceOp) ListWithFields(ctx context.Context, req *ListProductArgs) (*model.ProductConnection, error) {
-	if req == nil {
-		req = &ListProductArgs{}
+func (s *ProductServiceOp) ListWithFields(ctx context.Context, args *ListProductArgs) (*model.ProductConnection, error) {
+	if args == nil {
+		args = &ListProductArgs{}
 	}
 
-	if req.Fields == "" {
-		req.Fields = `id`
+	if args.Fields == "" {
+		args.Fields = `id`
 	}
 
-	if req.SortKey == "" {
-		req.SortKey = `ID`
+	if args.SortKey == "" {
+		args.SortKey = `ID`
 	}
 
 	q := fmt.Sprintf(`
@@ -337,21 +337,21 @@ func (s *ProductServiceOp) ListWithFields(ctx context.Context, req *ListProductA
 				}
 			}
 		}
-	`, req.Fields)
+	`, args.Fields)
 
 	vars := map[string]interface{}{
-		"first": req.First,
+		"first": args.First,
 	}
-	if req.After != "" {
-		vars["after"] = req.After
+	if args.After != "" {
+		vars["after"] = args.After
 	}
-	if req.Query != "" {
-		vars["query"] = req.Query
+	if args.Query != "" {
+		vars["query"] = args.Query
 	}
-	if req.SortKey != "" {
-		vars["sortKey"] = req.SortKey
+	if args.SortKey != "" {
+		vars["sortKey"] = args.SortKey
 	}
-	vars["reverse"] = req.Reverse
+	vars["reverse"] = args.Reverse
 
 	out := model.QueryRoot{}
 

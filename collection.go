@@ -22,7 +22,7 @@ type ListCollectionArgs struct {
 
 type CollectionService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Collection, error)
-	ListWithFields(ctx context.Context, req *ListCollectionArgs) (*model.CollectionConnection, error)
+	ListWithFields(ctx context.Context, args *ListCollectionArgs) (*model.CollectionConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Collection, error)
 	GetSingleCollection(ctx context.Context, id string, cursor string) (*model.Collection, error)
@@ -160,17 +160,17 @@ func (s *CollectionServiceOp) List(ctx context.Context, opts ...QueryOption) ([]
 	return res, nil
 }
 
-func (s *CollectionServiceOp) ListWithFields(ctx context.Context, req *ListCollectionArgs) (*model.CollectionConnection, error) {
-	if req == nil {
-		req = &ListCollectionArgs{}
+func (s *CollectionServiceOp) ListWithFields(ctx context.Context, args *ListCollectionArgs) (*model.CollectionConnection, error) {
+	if args == nil {
+		args = &ListCollectionArgs{}
 	}
 
-	if req.Fields == "" {
-		req.Fields = `id`
+	if args.Fields == "" {
+		args.Fields = `id`
 	}
 
-	if req.SortKey == "" {
-		req.SortKey = `ID`
+	if args.SortKey == "" {
+		args.SortKey = `ID`
 	}
 
 	q := fmt.Sprintf(`
@@ -187,21 +187,21 @@ func (s *CollectionServiceOp) ListWithFields(ctx context.Context, req *ListColle
                 }
 			}
 		}
-	`, req.Fields)
+	`, args.Fields)
 
 	vars := map[string]interface{}{
-		"first": req.First,
+		"first": args.First,
 	}
-	if req.After != "" {
-		vars["after"] = req.After
+	if args.After != "" {
+		vars["after"] = args.After
 	}
-	if req.Query != "" {
-		vars["query"] = req.Query
+	if args.Query != "" {
+		vars["query"] = args.Query
 	}
-	if req.SortKey != "" {
-		vars["sortKey"] = req.SortKey
+	if args.SortKey != "" {
+		vars["sortKey"] = args.SortKey
 	}
-	vars["reverse"] = req.Reverse
+	vars["reverse"] = args.Reverse
 
 	out := model.QueryRoot{}
 	err := s.client.gql.QueryString(ctx, q, vars, &out)
