@@ -19,6 +19,7 @@ const (
 	TestSingleQueryProductID = "gid://shopify/Product/8427241144634"
 	TestProductVariantCount  = 72
 	TestProductMediaCount    = 6
+	PrefixProductShopify     = "gid://shopify/Product/"
 )
 
 var _ = Describe("ProductService", func() {
@@ -52,7 +53,7 @@ var _ = Describe("ProductService", func() {
 					Expect(results[i].Handle).NotTo(BeEmpty())
 					Expect(results[i].Images).NotTo(BeNil())
 					Expect(results[i].Media).NotTo(BeNil())
-					Expect(results[i].Variants).NotTo(BeNil())
+					Expect(results[i].Variants).To(BeNil())
 					Expect(results[i].CreatedAt).NotTo(BeZero())
 				}
 			})
@@ -74,7 +75,7 @@ var _ = Describe("ProductService", func() {
 					Expect(results[i].Handle).NotTo(BeEmpty())
 					Expect(results[i].Images).NotTo(BeNil())
 					Expect(results[i].Media).NotTo(BeNil())
-					Expect(results[i].Variants).NotTo(BeNil())
+					Expect(results[i].Variants).To(BeNil())
 					Expect(results[i].CreatedAt).NotTo(BeZero())
 				}
 			})
@@ -171,7 +172,18 @@ var _ = Describe("ProductService", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(product).NotTo(BeNil())
 				Expect(product.ID).To(Equal(TestSingleQueryProductID))
-				Expect(len(product.Variants.Edges)).To(Equal(TestProductVariantCount))
+				Expect(product.VariantsCount.Count).To(Equal(TestProductVariantCount))
+			})
+		})
+	})
+
+	Describe("Count variants", func() {
+		When("Count variants", func() {
+			It("can return number of variants", func() {
+				query := fmt.Sprintf("product_id:%s", strings.ReplaceAll(TestSingleQueryProductID, PrefixProductShopify, ""))
+				productVariant, err := shopifyClient.Product.ListVariants(ctx, shopify.WithQuery(query))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(productVariant)).To(Equal(TestProductVariantCount))
 			})
 		})
 	})

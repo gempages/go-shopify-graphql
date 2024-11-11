@@ -19,6 +19,7 @@ type ListProductArgs struct {
 
 type ProductService interface {
 	List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error)
+	ListVariants(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error)
 	ListWithFields(ctx context.Context, args *ListProductArgs) (*model.ProductConnection, error)
 
 	Get(ctx context.Context, id string) (*model.Product, error)
@@ -90,6 +91,9 @@ const productBaseQuery = `
 		title
 	}
 	templateSuffix
+    variantsCount {
+		count
+	}
 `
 
 var singleProductQueryCollection = fmt.Sprintf(`
@@ -257,39 +261,52 @@ var productBulkQuery = fmt.Sprintf(`
 			}
 		}
 	}
-	variants{
+`, productBaseQuery)
+
+var productVariantQuery = `
+	id
+    product {
+		id
+	}
+	createdAt
+	updatedAt
+	legacyResourceId
+	sku
+	selectedOptions{
+		name
+		value
+	}
+	image {
+		altText
+		height
+		id
+		src
+		width
+	}
+	compareAtPrice
+	price
+	inventoryQuantity
+	barcode
+	title
+	inventoryPolicy
+	position
+	inventoryItem {
+		tracked
+	}
+	metafields{
 		edges{
 			node{
 				id
-				createdAt
-				updatedAt
 				legacyResourceId
-				sku
-				selectedOptions{
-					name
-					value
-				}
-                image {
-                    altText
-                    height
-                    id
-                    src
-                    width
-                }
-				compareAtPrice
-				price
-				inventoryQuantity
-				barcode
-				title
-				inventoryPolicy
-				position
-				inventoryItem {
-                    tracked
-                }
+				namespace
+				key
+				value
+				type
+				ownerType
 			}
 		}
 	}
-`, productBaseQuery)
+`
 
 func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*model.Product, error) {
 	b := &bulkQueryBuilder{
@@ -302,6 +319,25 @@ func (s *ProductServiceOp) List(ctx context.Context, opts ...QueryOption) ([]*mo
 	q := b.Build()
 
 	res := make([]*model.Product, 0)
+	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
+	if err != nil {
+		return nil, fmt.Errorf("bulk query: %w", err)
+	}
+
+	return res, nil
+}
+
+func (s *ProductServiceOp) ListVariants(ctx context.Context, opts ...QueryOption) ([]*model.ProductVariant, error) {
+	b := &bulkQueryBuilder{
+		operationName: "productVariants",
+		fields:        productVariantQuery,
+	}
+	for _, opt := range opts {
+		opt(b)
+	}
+	q := b.Build()
+
+	res := make([]*model.ProductVariant, 0)
 	err := s.client.BulkOperation.BulkQuery(ctx, q, &res)
 	if err != nil {
 		return nil, fmt.Errorf("bulk query: %w", err)
