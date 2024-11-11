@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -22,7 +21,6 @@ import (
 	"gopkg.in/guregu/null.v4"
 
 	"github.com/gempages/go-shopify-graphql/graphql"
-	"github.com/gempages/go-shopify-graphql/rand"
 	"github.com/gempages/go-shopify-graphql/utils"
 )
 
@@ -236,13 +234,25 @@ func (s *BulkOperationServiceOp) BulkQuery(ctx context.Context, query string, ou
 		return nil
 	}
 
-	filename := fmt.Sprintf("%s%s", rand.String(10), ".jsonl")
-	resultFile := filepath.Join(os.TempDir(), filename)
+	resultFile, err := os.CreateTemp("", "*.jsonl")
+	if err != nil {
+		return fmt.Errorf("create tempfile: %w", err)
+	}
 	// Clean up to avoid storage build up
-	defer os.Remove(resultFile)
+	defer func() {
+		_ = resultFile.Close()
+		_ = os.Remove(resultFile.Name())
+	}()
+
 	err = utils.DownloadFile(ctx, resultFile, *url)
 	if err != nil {
 		return fmt.Errorf("download file: %w", err)
+	}
+
+	// Prepare file for reading
+	_, err = resultFile.Seek(0, 0)
+	if err != nil {
+		return fmt.Errorf("seeking result file: %w", err)
 	}
 
 	err = parseBulkQueryResult(resultFile, out)
@@ -313,7 +323,8 @@ func (b *bulkQueryBuilder) Build() string {
 	return q
 }
 
-func parseBulkQueryResult(resultFilePath string, out interface{}) error {
+func parseBulkQueryResult(resultFile *os.File, out interface{}) error {
+	var err error
 	if reflect.TypeOf(out).Kind() != reflect.Ptr {
 		return fmt.Errorf("the out arg is not a pointer")
 	}
@@ -331,13 +342,7 @@ func parseBulkQueryResult(resultFilePath string, out interface{}) error {
 		itemType = itemType.Elem()
 	}
 
-	resultPath, err := os.Open(resultFilePath)
-	if err != nil {
-		return fmt.Errorf("open file: %w", err)
-	}
-	defer utils.CloseFile(resultPath)
-
-	reader := bufio.NewReader(resultPath)
+	reader := bufio.NewReader(resultFile)
 	json := jsoniter.ConfigFastest
 
 	connectionSink := make(map[string]interface{})

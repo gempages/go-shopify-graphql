@@ -11,25 +11,12 @@ import (
 	"time"
 
 	"github.com/gempages/go-helper/tracing"
-	pkghttp "github.com/gempages/go-shopify-graphql/http"
 	"github.com/getsentry/sentry-go"
+
+	pkghttp "github.com/gempages/go-shopify-graphql/http"
 )
 
-func CloseFile(f *os.File) {
-	err := f.Close()
-	if err != nil {
-		panic(err)
-	}
-}
-
-func ReadFile(file string) (data string, err error) {
-	var bytes []byte
-	bytes, err = os.ReadFile(file)
-	data = string(bytes)
-	return
-}
-
-func DownloadFile(ctx context.Context, filepath string, url string) error {
+func DownloadFile(ctx context.Context, file *os.File, url string) error {
 	var err error
 
 	span := sentry.StartSpan(ctx, "shopify.download_file")
@@ -45,13 +32,7 @@ func DownloadFile(ctx context.Context, filepath string, url string) error {
 	}
 	defer resp.Body.Close()
 
-	out, err := os.Create(filepath)
-	if err != nil {
-		return err
-	}
-	defer CloseFile(out)
-
-	_, err = io.Copy(out, resp.Body)
+	_, err = io.Copy(file, resp.Body)
 	return err
 }
 
