@@ -15,6 +15,7 @@ type BillingService interface {
 	AppSubscriptionLineItemUpdate(ctx context.Context, id string, cappedAmount model.MoneyInput) (*model.AppSubscriptionLineItemUpdatePayload, error)
 	AppUsageRecordCreate(ctx context.Context, input *model.AppUsageRecord) (*model.AppUsageRecordCreatePayload, error)
 	AppPurchaseOneTimeCreate(ctx context.Context, input *AppPurchaseOneTimeCreateInput) (*model.AppPurchaseOneTimeCreatePayload, error)
+	AppSubscriptionTrialExtend(ctx context.Context, appSubscriptionID string, days int) (*model.AppSubscriptionTrialExtendPayload, error)
 }
 
 type BillingServiceOp struct {
@@ -319,4 +320,47 @@ func (instance *BillingServiceOp) AppPurchaseOneTimeCreate(ctx context.Context, 
 		}
 	}
 	return &m.AppPurchaseOneTimeCreatePayload, nil
+}
+
+type MutationAppSubscriptionTrialExtend struct {
+	AppSubscriptionTrialExtend model.AppSubscriptionTrialExtendPayload `json:"appSubscriptionTrialExtend"`
+}
+
+var appSubscriptionTrialExtend = `
+mutation AppSubscriptionTrialExtend($id: ID!, $days: Int!) {
+	appSubscriptionTrialExtend(id: $id, days: $days) {
+		userErrors {
+			field
+			message
+			code
+		}
+		appSubscription {
+			id
+			status
+			name
+			test
+			trialDays
+			createdAt
+			currentPeriodEnd
+		}
+	}
+}
+`
+
+func (instance *BillingServiceOp) AppSubscriptionTrialExtend(ctx context.Context, appSubscriptionID string, days int) (*model.AppSubscriptionTrialExtendPayload, error) {
+	m := MutationAppSubscriptionTrialExtend{}
+	vars := map[string]any{
+		"id":   appSubscriptionID,
+		"days": days,
+	}
+	err := instance.client.gql.MutateString(ctx, appSubscriptionTrialExtend, vars, &m)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(m.AppSubscriptionTrialExtend.UserErrors) > 0 {
+		return nil, fmt.Errorf("%+v", m.AppSubscriptionTrialExtend.UserErrors)
+	}
+
+	return &m.AppSubscriptionTrialExtend, nil
 }
