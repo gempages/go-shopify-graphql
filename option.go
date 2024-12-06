@@ -7,6 +7,8 @@ type (
 		SetQuery(query string)
 		SetFirst(first int)
 		SetAfter(after string)
+		SetSortKey(sortKey string)
+		SetReverse(reverse bool)
 	}
 )
 
@@ -31,5 +33,17 @@ func WithFirst(first int) QueryOption {
 func WithAfter(after string) QueryOption {
 	return func(b QueryBuilder) {
 		b.SetAfter(after)
+	}
+}
+
+func WithSortKey(sortKey string) QueryOption {
+	return func(b QueryBuilder) {
+		b.SetSortKey(sortKey)
+	}
+}
+
+func WithReverse(reverse bool) QueryOption {
+	return func(b QueryBuilder) {
+		b.SetReverse(reverse)
 	}
 }

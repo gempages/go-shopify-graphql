@@ -21,6 +21,8 @@ type metafieldDifinitionQueryOptionBuilder struct {
 	query     *string
 	first     int
 	after     string
+	sortKey   *string
+	reverse   *bool
 }
 
 func (m *metafieldDifinitionQueryOptionBuilder) SetFields(fields string) {
@@ -37,6 +39,14 @@ func (m *metafieldDifinitionQueryOptionBuilder) SetFirst(first int) {
 
 func (m *metafieldDifinitionQueryOptionBuilder) SetAfter(after string) {
 	m.after = after
+}
+
+func (m *metafieldDifinitionQueryOptionBuilder) SetSortKey(sortKey string) {
+	m.sortKey = &sortKey
+}
+
+func (m *metafieldDifinitionQueryOptionBuilder) SetReverse(reverse bool) {
+	m.reverse = &reverse
 }
 
 func (m *metafieldDifinitionQueryOptionBuilder) Build() map[string]interface{} {
